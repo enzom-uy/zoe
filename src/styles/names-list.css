@@ -1,0 +1,332 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --spacing: 2rem;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+  padding: 1rem;
+  max-width: 100%;
+  margin: 0;
+}
+
+h1 {
+  margin-bottom: 1rem;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+/* Estilos para pantalla */
+@media screen {
+  .input-section {
+    background: #f5f5f5;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .font-size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .font-size-control label {
+    font-size: 0.9rem;
+    color: #555;
+    font-weight: 500;
+  }
+
+  .font-size-input {
+    width: 70px;
+    padding: 0.5rem;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s;
+  }
+
+  .font-size-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+  }
+
+  .font-size-unit {
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+  }
+
+  input[type="text"]:focus {
+    outline: none;
+    border-color: #4a90e2;
+  }
+
+  button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .add-btn {
+    background: #4a90e2;
+    color: white;
+  }
+
+  .add-btn:hover {
+    background: #357abd;
+  }
+
+  .edit-btn {
+    background: #f39c12;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .edit-btn:hover {
+    background: #e67e22;
+  }
+
+  .delete-btn {
+    background: #e74c3c;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .delete-btn:hover {
+    background: #c0392b;
+  }
+
+  .cancel-btn {
+    background: #95a5a6;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .cancel-btn:hover {
+    background: #7f8c8d;
+  }
+
+  .save-btn {
+    background: #27ae60;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .save-btn:hover {
+    background: #229954;
+  }
+
+  /* Estilos de lista para pantalla */
+  .names-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0; /* Sin gap para que las líneas se toquen */
+    align-items: flex-start;
+  }
+
+  .name-item {
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px dashed #ccc; /* Líneas guía punteadas visibles */
+    border-radius: 0; /* Sin bordes redondeados para formar cuadrícula */
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: white;
+    min-width: 120px; /* Ancho mínimo reducido */
+    flex-shrink: 0;
+    gap: 0.5rem; /* Espacio entre el texto/input y los botones */
+  }
+
+  /* Item en modo edición necesita más espacio */
+  .name-item.editing {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    min-width: 250px;
+  }
+
+  .name-item:hover {
+    background-color: #f9f9f9;
+  }
+
+  .name-item.active {
+    background-color: #f0f7ff;
+  }
+
+  .name-text {
+    font-family: "CustomFont", Georgia, serif;
+    flex: 1;
+    white-space: nowrap; /* Mantener nombres en una línea */
+  }
+
+  /* Ocultar botones por defecto */
+  .name-actions {
+    display: none;
+    gap: 0.5rem;
+    flex-shrink: 0; /* Los botones no se comprimen */
+  }
+
+  /* Mostrar botones solo cuando el item está activo */
+  .name-item.active .name-actions {
+    display: flex;
+  }
+
+  /* En modo edición, los botones se apilan verticalmente */
+  .name-item.editing .name-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .edit-input {
+    flex: 1;
+    padding: 0.5rem;
+    min-width: 150px; /* Ancho mínimo para el input de edición */
+    /* El tamaño de letra se aplica dinámicamente desde React */
+    font-family: "CustomFont", Georgia, serif;
+    border: 2px solid #4a90e2;
+    border-radius: 4px;
+  }
+}
+
+/* Estilos generales (pantalla e impresión) */
+.names-list {
+  list-style: none;
+}
+
+.name-text {
+  font-family: "CustomFont", Georgia, serif;
+  /* El tamaño se aplica dinámicamente desde React */
+}
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 2rem 1rem;
+  font-style: italic;
+}
+
+/* Estilos para impresión en A4 - optimizado para recortar */
+@media print {
+  @page {
+    size: A4;
+    margin: 2cm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* Ocultar todos los controles e interfaz */
+  .input-section,
+  .empty-state,
+  .noprint,
+  .font-size-control {
+    display: none !important;
+  }
+
+  /* Ocultar completamente los botones con máxima especificidad */
+  .name-actions,
+  .name-item .name-actions,
+  li .name-actions,
+  button,
+  .edit-btn,
+  .delete-btn,
+  .save-btn,
+  .cancel-btn,
+  .name-actions button,
+  .name-item button,
+  [data-action],
+  [data-action="edit"],
+  [data-action="delete"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+
+  /* Optimizar lista para recorte */
+  .names-list {
+    list-style: none;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0 !important;
+  }
+
+  .name-item {
+    page-break-inside: avoid;
+    border: 1px dashed #999;
+    padding: 0.5rem 0.75rem;
+    margin: 0;
+    display: inline-flex !important;
+    background: transparent;
+    min-width: auto;
+  }
+
+  .name-text {
+    display: block !important;
+    width: auto !important;
+    white-space: nowrap;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  /* Opcional: descomentar para ocultar el título al imprimir */
+  /* h1 {
+		display: none;
+	} */
+}
+
+/* Carga de tipografía custom */
+@font-face {
+  font-family: "CustomFont";
+  src: url("/fonts/josephsophia.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
