@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
+import { Toaster } from "./ui/sonner";
+import { toast } from "sonner";
 import { Upload, Plus, Trash2, Edit2, Check, X, Wand2 } from "lucide-react";
 
 interface CharStyle {
@@ -30,20 +32,21 @@ export default function NamesList() {
     null
   );
   const [showStyleEditor, setShowStyleEditor] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showHint, setShowHint] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const STORAGE_KEY = "names-list";
   const FONT_SIZE_KEY = "names-font-size";
+  const HINT_KEY = "names-hint-dismissed";
 
   const LETTER_STYLES = [
     { feature: "normal", label: "Normal", emoji: "📝" },
     { feature: "ss01", label: "Corazón final", emoji: "❤️" },
-    { feature: "ss02", label: "Línea + Corazón", emoji: "✨❤️" },
-    { feature: "ss03", label: "Alternativa 3", emoji: "🎨" },
-    { feature: "swsh", label: "Flourish", emoji: "💫" },
-    { feature: "salt", label: "Alternativa", emoji: "🎭" },
+    { feature: "ss02", label: "Línea inicio", emoji: "✨❤️" },
+    { feature: "ss03", label: "Línea final", emoji: "🎨" },
   ];
 
   // Cargar nombres del localStorage
@@ -66,6 +69,12 @@ export default function NamesList() {
         console.error("Error al cargar tamaño de letra:", e);
       }
     }
+
+    // Cargar estado del hint
+    const hintDismissed = localStorage.getItem(HINT_KEY);
+    if (hintDismissed === "true") {
+      setShowHint(false);
+    }
   }, []);
 
   // Guardar nombres en localStorage
@@ -86,6 +95,7 @@ export default function NamesList() {
       const target = e.target as HTMLElement;
       if (!target.closest(".name-item")) {
         setActiveId(null);
+        setSelectedIds(new Set());
       }
     };
 
@@ -111,6 +121,7 @@ export default function NamesList() {
       setNames([...names, newItem]);
       setNewName("");
       inputRef.current?.focus();
+      toast.success(`"${trimmedName}" agregado correctamente`);
     }
   };
 
@@ -121,23 +132,44 @@ export default function NamesList() {
   };
 
   const deleteName = (id: string) => {
+    const nameToDelete = names.find((item) => item.id === id);
     if (confirm("¿Estás seguro de que quieres eliminar este nombre?")) {
       setNames(names.filter((item) => item.id !== id));
       setActiveId(null);
+      setSelectedIds(new Set());
+      toast.success(`"${nameToDelete?.name}" eliminado correctamente`);
+    }
+  };
+
+  const deleteSelectedNames = () => {
+    if (selectedIds.size === 0) return;
+
+    const count = selectedIds.size;
+    if (
+      confirm(
+        `¿Estás seguro de que quieres eliminar ${count} nombre(s) seleccionado(s)?`
+      )
+    ) {
+      setNames(names.filter((item) => !selectedIds.has(item.id)));
+      setSelectedIds(new Set());
+      setActiveId(null);
+      toast.success(`${count} nombre(s) eliminado(s) correctamente`);
     }
   };
 
   const deleteAllNames = () => {
     if (names.length === 0) return;
 
+    const count = names.length;
     if (
       confirm(
-        `¿Estás seguro de que quieres eliminar todos los ${names.length} nombre(s)?`
+        `¿Estás seguro de que quieres eliminar todos los ${count} nombre(s)?`
       )
     ) {
       setNames([]);
       localStorage.removeItem(STORAGE_KEY);
       setActiveId(null);
+      toast.success(`Todos los nombres (${count}) eliminados correctamente`);
     }
   };
 
@@ -151,7 +183,27 @@ export default function NamesList() {
 
   const toggleActive = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveId(activeId === id ? null : id);
+
+    // Si se presiona Ctrl/Cmd, activar selección múltiple
+    if (e.ctrlKey || e.metaKey) {
+      const newSelected = new Set(selectedIds);
+      if (newSelected.has(id)) {
+        newSelected.delete(id);
+      } else {
+        newSelected.add(id);
+      }
+      setSelectedIds(newSelected);
+      // Mantener activeId para mostrar botones
+      if (newSelected.size > 0) {
+        setActiveId(id);
+      } else {
+        setActiveId(null);
+      }
+    } else {
+      // Click normal: limpiar selección múltiple y alternar active
+      setSelectedIds(new Set());
+      setActiveId(activeId === id ? null : id);
+    }
   };
 
   const startEdit = (id: string, currentName: string) => {
@@ -200,6 +252,7 @@ export default function NamesList() {
       setEditingStyles(new Map());
       setSelectedCharIndex(null);
       setShowStyleEditor(false);
+      toast.success(`"${trimmedValue}" actualizado correctamente`);
     }
   };
 
@@ -209,6 +262,11 @@ export default function NamesList() {
     setEditingStyles(new Map());
     setSelectedCharIndex(null);
     setShowStyleEditor(false);
+  };
+
+  const dismissHint = () => {
+    setShowHint(false);
+    localStorage.setItem(HINT_KEY, "true");
   };
 
   const handleCharClick = (index: number) => {
@@ -234,6 +292,9 @@ export default function NamesList() {
           newStyles.set(index, feature);
         }
       });
+      const styleName =
+        LETTER_STYLES.find((s) => s.feature === feature)?.label || feature;
+      toast.success(`Estilo "${styleName}" aplicado a todos los caracteres`);
     }
     setEditingStyles(newStyles);
     setSelectedCharIndex(null);
@@ -242,6 +303,7 @@ export default function NamesList() {
   const resetAllStyles = () => {
     setEditingStyles(new Map());
     setSelectedCharIndex(null);
+    toast.success("Todos los estilos han sido restablecidos");
   };
 
   const getFontFeatureSettings = (feature: string): string => {
@@ -285,6 +347,8 @@ export default function NamesList() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      toast.success(`${lines.length} nombre(s) cargado(s) desde el archivo`);
     };
 
     reader.onerror = () => {
@@ -329,6 +393,7 @@ export default function NamesList() {
 
   return (
     <>
+      <Toaster />
       <Card className="input-section">
         <div className="input-group">
           <Input
@@ -376,6 +441,16 @@ export default function NamesList() {
         </div>
         {names.length > 0 && (
           <div className="actions-section">
+            {selectedIds.size > 0 && (
+              <Button
+                onClick={deleteSelectedNames}
+                variant="destructive"
+                size="sm"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar seleccionados ({selectedIds.size})
+              </Button>
+            )}
             <Button onClick={deleteAllNames} variant="destructive" size="sm">
               <Trash2 className="mr-2 h-4 w-4" />
               Eliminar todos
@@ -398,258 +473,279 @@ export default function NamesList() {
             </p>
           </div>
         ) : (
-          <ul className="names-list">
-            {names.map((item) => (
-              <li
-                key={item.id}
-                className={`name-item ${activeId === item.id ? "active" : ""} ${
-                  editingId === item.id ? "editing" : ""
-                }`}
-                data-id={item.id}
-                onClick={(e) => toggleActive(item.id, e)}
-              >
-                {editingId === item.id ? (
-                  <div className="editing-container">
-                    {/* Editor de texto con estilos por letra */}
-                    <div className="text-editor-area">
-                      <div
-                        className="styled-text-display"
-                        style={{
-                          fontFamily: "CustomFont, Georgia, serif",
-                          fontSize: `${fontSize}px`,
-                        }}
-                      >
-                        {editValue.split("").map((char, index) => {
-                          const feature = editingStyles.get(index) || "normal";
-                          const isSelected = selectedCharIndex === index;
-                          const isSpace = char === " ";
+          <>
+            {names.length > 1 && selectedIds.size === 0 && showHint && (
+              <div className="hint-message">
+                <span>
+                  💡 Usa <kbd>Ctrl+Click</kbd> para seleccionar varios nombres y
+                  eliminarlos juntos
+                </span>
+                <Button
+                  onClick={dismissHint}
+                  variant="ghost"
+                  size="sm"
+                  className="hint-close"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            <ul className="names-list">
+              {names.map((item) => (
+                <li
+                  key={item.id}
+                  className={`name-item ${
+                    activeId === item.id ? "active" : ""
+                  } ${editingId === item.id ? "editing" : ""} ${
+                    selectedIds.has(item.id) ? "selected" : ""
+                  }`}
+                  data-id={item.id}
+                  onClick={(e) => toggleActive(item.id, e)}
+                >
+                  {editingId === item.id ? (
+                    <div className="editing-container">
+                      {/* Editor de texto con estilos por letra */}
+                      <div className="text-editor-area">
+                        <div
+                          className="styled-text-display"
+                          style={{
+                            fontFamily: "CustomFont, Georgia, serif",
+                            fontSize: `${fontSize}px`,
+                          }}
+                        >
+                          {editValue.split("").map((char, index) => {
+                            const feature =
+                              editingStyles.get(index) || "normal";
+                            const isSelected = selectedCharIndex === index;
+                            const isSpace = char === " ";
 
-                          return (
-                            <span
-                              key={index}
-                              className={`char-editable ${
-                                isSelected ? "char-selected" : ""
-                              } ${isSpace ? "char-space" : ""}`}
-                              style={{
-                                fontFeatureSettings:
-                                  getFontFeatureSettings(feature),
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCharClick(index);
-                              }}
-                            >
-                              {char}
-                            </span>
-                          );
-                        })}
-                      </div>
-
-                      {/* Input oculto para editar el texto */}
-                      <Input
-                        ref={editInputRef}
-                        type="text"
-                        className="hidden-text-input"
-                        value={editValue}
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          setEditValue(newValue);
-                          // Ajustar estilos si el texto cambió de longitud
-                          if (newValue.length < editValue.length) {
-                            const newStyles = new Map<number, string>();
-                            editingStyles.forEach((feature, idx) => {
-                              if (idx < newValue.length) {
-                                newStyles.set(idx, feature);
-                              }
-                            });
-                            setEditingStyles(newStyles);
-                          }
-                          setSelectedCharIndex(null);
-                        }}
-                        onKeyDown={handleEditKeyPress}
-                        style={{ fontSize: `${fontSize}px` }}
-                      />
-                    </div>
-
-                    {/* Botón para mostrar/ocultar editor de estilos */}
-                    <div className="editing-actions">
-                      <Button
-                        size="sm"
-                        variant={showStyleEditor ? "default" : "outline"}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowStyleEditor(!showStyleEditor);
-                        }}
-                      >
-                        <Wand2 className="h-4 w-4 mr-1" />
-                        Estilos
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          saveEdit();
-                        }}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          cancelEdit();
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    {/* Panel de estilos OpenType */}
-                    {showStyleEditor && (
-                      <div
-                        className="style-editor-panel"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {selectedCharIndex !== null && (
-                          <div className="char-style-selector">
-                            <p className="text-xs font-semibold mb-2">
-                              Seleccionado: "
-                              <span
-                                style={{
-                                  fontFamily: "CustomFont, Georgia, serif",
-                                  fontSize: "20px",
-                                }}
-                              >
-                                {editValue[selectedCharIndex]}
-                              </span>
-                              " (pos {selectedCharIndex + 1})
-                            </p>
-                            <div className="style-buttons">
-                              {LETTER_STYLES.map((style) => (
-                                <Button
-                                  key={style.feature}
-                                  variant={
-                                    editingStyles.get(selectedCharIndex) ===
-                                      style.feature ||
-                                    (style.feature === "normal" &&
-                                      !editingStyles.has(selectedCharIndex))
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    applyStyleToChar(
-                                      selectedCharIndex,
-                                      style.feature
-                                    );
-                                  }}
-                                >
-                                  {style.emoji} {style.label}
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="style-actions">
-                          <p className="text-xs font-semibold mb-2">
-                            Aplicar a todas:
-                          </p>
-                          <div className="style-buttons">
-                            {LETTER_STYLES.map((style) => (
-                              <Button
-                                key={style.feature}
-                                variant="secondary"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  applyStyleToAll(style.feature);
-                                }}
-                              >
-                                {style.emoji}
-                              </Button>
-                            ))}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                resetAllStyles();
-                              }}
-                            >
-                              Resetear
-                            </Button>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-muted-foreground mt-2">
-                          💡 Haz click en una letra arriba para aplicarle un
-                          estilo
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <span
-                      className="name-text"
-                      style={{
-                        fontSize: `${fontSize}px`,
-                        fontFamily: "CustomFont, Georgia, serif",
-                      }}
-                    >
-                      {item.charStyles && item.charStyles.length > 0
-                        ? // Renderizar con estilos personalizados
-                          item.name.split("").map((char, index) => {
-                            const charStyle = item.charStyles?.find(
-                              (cs) => cs.index === index
-                            );
-                            const feature = charStyle?.feature || "normal";
                             return (
                               <span
                                 key={index}
+                                className={`char-editable ${
+                                  isSelected ? "char-selected" : ""
+                                } ${isSpace ? "char-space" : ""}`}
                                 style={{
                                   fontFeatureSettings:
                                     getFontFeatureSettings(feature),
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCharClick(index);
                                 }}
                               >
                                 {char}
                               </span>
                             );
-                          })
-                        : // Renderizar sin estilos
-                          item.name}
-                    </span>
-                    <div className="name-actions noprint">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEdit(item.id, item.name);
-                        }}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteName(item.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                          })}
+                        </div>
+
+                        {/* Input oculto para editar el texto */}
+                        <Input
+                          ref={editInputRef}
+                          type="text"
+                          className="hidden-text-input"
+                          value={editValue}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            setEditValue(newValue);
+                            // Ajustar estilos si el texto cambió de longitud
+                            if (newValue.length < editValue.length) {
+                              const newStyles = new Map<number, string>();
+                              editingStyles.forEach((feature, idx) => {
+                                if (idx < newValue.length) {
+                                  newStyles.set(idx, feature);
+                                }
+                              });
+                              setEditingStyles(newStyles);
+                            }
+                            setSelectedCharIndex(null);
+                          }}
+                          onKeyDown={handleEditKeyPress}
+                          style={{ fontSize: `${fontSize}px` }}
+                        />
+                      </div>
+
+                      {/* Botón para mostrar/ocultar editor de estilos */}
+                      <div className="editing-actions">
+                        <Button
+                          size="sm"
+                          variant={showStyleEditor ? "default" : "outline"}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowStyleEditor(!showStyleEditor);
+                          }}
+                        >
+                          <Wand2 className="h-4 w-4 mr-1" />
+                          Estilos
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveEdit();
+                          }}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cancelEdit();
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {/* Panel de estilos OpenType */}
+                      {showStyleEditor && (
+                        <div
+                          className="style-editor-panel"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {selectedCharIndex !== null && (
+                            <div className="char-style-selector">
+                              <p className="text-xs font-semibold mb-2">
+                                Seleccionado: "
+                                <span
+                                  style={{
+                                    fontFamily: "CustomFont, Georgia, serif",
+                                    fontSize: "20px",
+                                  }}
+                                >
+                                  {editValue[selectedCharIndex]}
+                                </span>
+                                " (pos {selectedCharIndex + 1})
+                              </p>
+                              <div className="style-buttons">
+                                {LETTER_STYLES.map((style) => (
+                                  <Button
+                                    key={style.feature}
+                                    variant={
+                                      editingStyles.get(selectedCharIndex) ===
+                                        style.feature ||
+                                      (style.feature === "normal" &&
+                                        !editingStyles.has(selectedCharIndex))
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      applyStyleToChar(
+                                        selectedCharIndex,
+                                        style.feature
+                                      );
+                                    }}
+                                  >
+                                    {style.emoji} {style.label}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="style-actions">
+                            <p className="text-xs font-semibold mb-2">
+                              Aplicar a todas:
+                            </p>
+                            <div className="style-buttons">
+                              {LETTER_STYLES.map((style) => (
+                                <Button
+                                  key={style.feature}
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    applyStyleToAll(style.feature);
+                                  }}
+                                >
+                                  {style.emoji}
+                                </Button>
+                              ))}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  resetAllStyles();
+                                }}
+                              >
+                                Resetear
+                              </Button>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground mt-2">
+                            💡 Haz click en una letra arriba para aplicarle un
+                            estilo
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+                  ) : (
+                    <>
+                      <span
+                        className="name-text"
+                        style={{
+                          fontSize: `${fontSize}px`,
+                          fontFamily: "CustomFont, Georgia, serif",
+                        }}
+                      >
+                        {item.charStyles && item.charStyles.length > 0
+                          ? // Renderizar con estilos personalizados
+                            item.name.split("").map((char, index) => {
+                              const charStyle = item.charStyles?.find(
+                                (cs) => cs.index === index
+                              );
+                              const feature = charStyle?.feature || "normal";
+                              return (
+                                <span
+                                  key={index}
+                                  style={{
+                                    fontFeatureSettings:
+                                      getFontFeatureSettings(feature),
+                                  }}
+                                >
+                                  {char}
+                                </span>
+                              );
+                            })
+                          : // Renderizar sin estilos
+                            item.name}
+                      </span>
+                      <div className="name-actions noprint">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEdit(item.id, item.name);
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteName(item.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </>

@@ -123,6 +123,50 @@ h1 {
     font-weight: 600;
   }
 
+  /* Mensaje de ayuda para selección múltiple */
+  .hint-message {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: hsl(var(--muted));
+    border-left: 3px solid hsl(var(--primary));
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: hsl(var(--foreground));
+    max-width: fit-content;
+  }
+
+  .hint-message span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .hint-message kbd {
+    padding: 0.2rem 0.4rem;
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.85em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .hint-close {
+    padding: 0.25rem;
+    height: auto;
+    min-width: auto;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .hint-close:hover {
+    opacity: 1;
+    background: hsl(var(--accent));
+  }
+
   /* Estilos de lista para pantalla */
   .names-list {
     list-style: none;
@@ -161,6 +205,16 @@ h1 {
 
   .name-item.active {
     background-color: hsl(var(--accent));
+  }
+
+  .name-item.selected {
+    background-color: hsl(var(--primary) / 0.15);
+    border: 2px dashed hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  .name-item.selected:hover {
+    background-color: hsl(var(--primary) / 0.25);
   }
 
   .name-text {
