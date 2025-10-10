@@ -12,8 +12,10 @@ export default function NamesList() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const STORAGE_KEY = "names-list";
   const FONT_SIZE_KEY = "names-font-size";
@@ -99,6 +101,20 @@ export default function NamesList() {
     }
   };
 
+  const deleteAllNames = () => {
+    if (names.length === 0) return;
+
+    if (
+      confirm(
+        `¿Estás seguro de que quieres eliminar todos los ${names.length} nombre(s)?`
+      )
+    ) {
+      setNames([]);
+      localStorage.removeItem(STORAGE_KEY);
+      setActiveId(null);
+    }
+  };
+
   const startEdit = (id: string, currentName: string) => {
     setEditingId(id);
     setEditValue(currentName);
@@ -135,6 +151,84 @@ export default function NamesList() {
     setActiveId(activeId === id ? null : id);
   };
 
+  const processFile = (file: File) => {
+    // Verificar que sea un archivo .txt
+    if (!file.name.endsWith(".txt")) {
+      alert("Por favor, sube un archivo .txt");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+
+      // Separar por líneas y filtrar vacías
+      const lines = content
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+      if (lines.length === 0) {
+        alert("El archivo no contiene nombres válidos");
+        return;
+      }
+
+      // Crear items para cada línea
+      const newItems: NameItem[] = lines.map((line, index) => ({
+        id: `${Date.now()}-${index}`,
+        name: line,
+      }));
+
+      // Agregar a los nombres existentes
+      setNames([...names, ...newItems]);
+
+      // Limpiar el input de archivo
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    };
+
+    reader.onerror = () => {
+      alert("Error al leer el archivo");
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <>
       <div className="input-section">
@@ -151,6 +245,16 @@ export default function NamesList() {
           <button className="add-btn" onClick={addName}>
             Agregar
           </button>
+          <button className="upload-btn" onClick={triggerFileUpload}>
+            📁 Subir .txt
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt"
+            onChange={handleFileUpload}
+            style={{ display: "none" }}
+          />
         </div>
         <div className="font-size-control">
           <label htmlFor="fontSize">Tamaño de letra:</label>
@@ -165,89 +269,106 @@ export default function NamesList() {
           />
           <span className="font-size-unit">px</span>
         </div>
+        {names.length > 0 && (
+          <div className="actions-section">
+            <button className="delete-all-btn" onClick={deleteAllNames}>
+              🗑️ Eliminar todos
+            </button>
+          </div>
+        )}
       </div>
 
-      {names.length === 0 ? (
-        <div className="empty-state">
-          No hay nombres agregados. Agrega el primero arriba.
-        </div>
-      ) : (
-        <ul className="names-list">
-          {names.map((item) => (
-            <li
-              key={item.id}
-              className={`name-item ${activeId === item.id ? "active" : ""} ${
-                editingId === item.id ? "editing" : ""
-              }`}
-              data-id={item.id}
-              onClick={(e) => toggleActive(item.id, e)}
-            >
-              {editingId === item.id ? (
-                <>
-                  <input
-                    ref={editInputRef}
-                    type="text"
-                    className="edit-input"
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onKeyDown={handleEditKeyPress}
-                    style={{ fontSize: `${fontSize}px` }}
-                  />
-                  <div className="name-actions">
-                    <button
-                      className="save-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        saveEdit();
-                      }}
+      <div
+        className={`drop-zone ${isDragging ? "dragging" : ""}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {names.length === 0 ? (
+          <div className="empty-state">
+            <p>📥 Arrastra un archivo .txt aquí</p>
+            <p className="empty-state-subtitle">
+              o agrega nombres usando el campo de arriba
+            </p>
+          </div>
+        ) : (
+          <ul className="names-list">
+            {names.map((item) => (
+              <li
+                key={item.id}
+                className={`name-item ${activeId === item.id ? "active" : ""} ${
+                  editingId === item.id ? "editing" : ""
+                }`}
+                data-id={item.id}
+                onClick={(e) => toggleActive(item.id, e)}
+              >
+                {editingId === item.id ? (
+                  <>
+                    <input
+                      ref={editInputRef}
+                      type="text"
+                      className="edit-input"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={handleEditKeyPress}
+                      style={{ fontSize: `${fontSize}px` }}
+                    />
+                    <div className="name-actions">
+                      <button
+                        className="save-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          saveEdit();
+                        }}
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        className="cancel-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          cancelEdit();
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="name-text"
+                      style={{ fontSize: `${fontSize}px` }}
                     >
-                      Guardar
-                    </button>
-                    <button
-                      className="cancel-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        cancelEdit();
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <span
-                    className="name-text"
-                    style={{ fontSize: `${fontSize}px` }}
-                  >
-                    {item.name}
-                  </span>
-                  <div className="name-actions noprint">
-                    <button
-                      className="edit-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEdit(item.id, item.name);
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteName(item.id);
-                      }}
-                    >
-                      Borrar
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+                      {item.name}
+                    </span>
+                    <div className="name-actions noprint">
+                      <button
+                        className="edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEdit(item.id, item.name);
+                        }}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteName(item.id);
+                        }}
+                      >
+                        Borrar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </>
   );
 }

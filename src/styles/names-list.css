@@ -45,6 +45,14 @@ h1 {
     padding: 0.5rem 0;
   }
 
+  .actions-section {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #ddd;
+  }
+
   .font-size-control label {
     font-size: 0.9rem;
     color: #555;
@@ -72,6 +80,7 @@ h1 {
 
   input[type="text"] {
     flex: 1;
+    max-width: 400px;
     padding: 0.75rem;
     border: 2px solid #ddd;
     border-radius: 4px;
@@ -100,6 +109,24 @@ h1 {
 
   .add-btn:hover {
     background: #357abd;
+  }
+
+  .upload-btn {
+    background: #27ae60;
+    color: white;
+  }
+
+  .upload-btn:hover {
+    background: #229954;
+  }
+
+  .delete-all-btn {
+    background: #e74c3c;
+    color: white;
+  }
+
+  .delete-all-btn:hover {
+    background: #c0392b;
   }
 
   .edit-btn {
@@ -144,6 +171,52 @@ h1 {
 
   .save-btn:hover {
     background: #229954;
+  }
+
+  /* Drop zone para drag and drop */
+  .drop-zone {
+    min-height: 200px;
+    transition: all 0.3s ease;
+  }
+
+  .drop-zone.dragging {
+    background: #e8f4f8;
+    border: 3px dashed #4a90e2;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+  }
+
+  .drop-zone.dragging .empty-state {
+    background: transparent;
+    border-color: transparent;
+    color: #4a90e2;
+    transform: scale(1.05);
+  }
+
+  .drop-zone.dragging .empty-state p:first-child {
+    font-size: 1.5rem;
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .drop-zone.dragging .names-list {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .drop-zone.dragging .empty-state {
+    color: #4a90e2;
+    font-weight: 600;
   }
 
   /* Estilos de lista para pantalla */
@@ -233,9 +306,29 @@ h1 {
 
 .empty-state {
   text-align: center;
-  color: #999;
-  padding: 2rem 1rem;
+  color: #666;
+  padding: 3rem 2rem;
   font-style: italic;
+  background: #f9f9f9;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+}
+
+.empty-state p:first-child {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4a90e2;
+  font-style: normal;
+}
+
+.empty-state-subtitle {
+  font-size: 0.9rem;
+  color: #999;
 }
 
 /* Estilos para impresión en A4 - optimizado para recortar */
@@ -259,7 +352,8 @@ h1 {
   .input-section,
   .empty-state,
   .noprint,
-  .font-size-control {
+  .font-size-control,
+  .actions-section {
     display: none !important;
   }
 
