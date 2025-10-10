@@ -25,17 +25,16 @@ h1 {
 /* Estilos para pantalla */
 @media screen {
   .input-section {
-    background: #f5f5f5;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 
   .input-group {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 0.75rem;
+    align-items: center;
   }
 
   .font-size-control {
@@ -50,12 +49,12 @@ h1 {
     gap: 0.5rem;
     margin-top: 0.75rem;
     padding-top: 0.75rem;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid hsl(var(--border));
   }
 
   .font-size-control label {
     font-size: 0.9rem;
-    color: #555;
+    color: hsl(var(--muted-foreground));
     font-weight: 500;
   }
 
@@ -75,102 +74,7 @@ h1 {
 
   .font-size-unit {
     font-size: 0.9rem;
-    color: #666;
-  }
-
-  input[type="text"] {
-    flex: 1;
-    max-width: 400px;
-    padding: 0.75rem;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
-  }
-
-  input[type="text"]:focus {
-    outline: none;
-    border-color: #4a90e2;
-  }
-
-  button {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
-
-  .add-btn {
-    background: #4a90e2;
-    color: white;
-  }
-
-  .add-btn:hover {
-    background: #357abd;
-  }
-
-  .upload-btn {
-    background: #27ae60;
-    color: white;
-  }
-
-  .upload-btn:hover {
-    background: #229954;
-  }
-
-  .delete-all-btn {
-    background: #e74c3c;
-    color: white;
-  }
-
-  .delete-all-btn:hover {
-    background: #c0392b;
-  }
-
-  .edit-btn {
-    background: #f39c12;
-    color: white;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  .edit-btn:hover {
-    background: #e67e22;
-  }
-
-  .delete-btn {
-    background: #e74c3c;
-    color: white;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  .delete-btn:hover {
-    background: #c0392b;
-  }
-
-  .cancel-btn {
-    background: #95a5a6;
-    color: white;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  .cancel-btn:hover {
-    background: #7f8c8d;
-  }
-
-  .save-btn {
-    background: #27ae60;
-    color: white;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  .save-btn:hover {
-    background: #229954;
+    color: hsl(var(--muted-foreground));
   }
 
   /* Drop zone para drag and drop */
@@ -180,17 +84,17 @@ h1 {
   }
 
   .drop-zone.dragging {
-    background: #e8f4f8;
-    border: 3px dashed #4a90e2;
+    background: hsl(var(--accent));
+    border: 3px dashed hsl(var(--primary));
     border-radius: 8px;
     padding: 1rem;
-    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+    box-shadow: 0 4px 12px hsla(var(--primary), 0.2);
   }
 
   .drop-zone.dragging .empty-state {
     background: transparent;
     border-color: transparent;
-    color: #4a90e2;
+    color: hsl(var(--primary));
     transform: scale(1.05);
   }
 
@@ -233,14 +137,14 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px dashed #ccc; /* Líneas guía punteadas visibles */
-    border-radius: 0; /* Sin bordes redondeados para formar cuadrícula */
+    border: 1px dashed hsl(var(--border));
+    border-radius: 0;
     cursor: pointer;
     transition: all 0.2s;
-    background-color: white;
-    min-width: 120px; /* Ancho mínimo reducido */
+    background-color: hsl(var(--background));
+    min-width: 120px;
     flex-shrink: 0;
-    gap: 0.5rem; /* Espacio entre el texto/input y los botones */
+    gap: 0.5rem;
   }
 
   /* Item en modo edición necesita más espacio */
@@ -252,11 +156,11 @@ h1 {
   }
 
   .name-item:hover {
-    background-color: #f9f9f9;
+    background-color: hsl(var(--accent));
   }
 
   .name-item.active {
-    background-color: #f0f7ff;
+    background-color: hsl(var(--accent));
   }
 
   .name-text {
@@ -286,11 +190,100 @@ h1 {
   .edit-input {
     flex: 1;
     padding: 0.5rem;
-    min-width: 150px; /* Ancho mínimo para el input de edición */
-    /* El tamaño de letra se aplica dinámicamente desde React */
+    min-width: 150px;
     font-family: "CustomFont", Georgia, serif;
-    border: 2px solid #4a90e2;
-    border-radius: 4px;
+  }
+
+  /* Estilos para el editor de OpenType */
+  .editing-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .text-editor-area {
+    flex: 1;
+  }
+
+  .styled-text-display {
+    padding: 0.75rem;
+    background: hsl(var(--muted) / 0.3);
+    border: 2px solid hsl(var(--border));
+    border-radius: 6px;
+    min-height: 60px;
+    line-height: 1.6;
+    cursor: text;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .char-editable {
+    display: inline-block;
+    padding: 0 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 3px;
+  }
+
+  .char-editable:hover:not(.char-space) {
+    background: hsl(var(--accent));
+  }
+
+  .char-selected {
+    background: hsl(var(--primary) / 0.2);
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -2px;
+  }
+
+  .char-space {
+    width: 0.5em;
+    cursor: default;
+  }
+
+  .hidden-text-input {
+    margin-top: 0.5rem;
+  }
+
+  .editing-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .style-editor-panel {
+    padding: 1rem;
+    background: hsl(var(--accent));
+    border: 2px solid hsl(var(--primary) / 0.3);
+    border-radius: 6px;
+    margin-top: 0.5rem;
+  }
+
+  .char-style-selector {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .style-actions {
+    margin-top: 0.75rem;
+  }
+
+  .style-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .name-item.editing {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    min-width: 350px;
+    max-width: 100%;
+    padding: 1rem;
   }
 }
 
@@ -306,11 +299,11 @@ h1 {
 
 .empty-state {
   text-align: center;
-  color: #666;
+  color: hsl(var(--muted-foreground));
   padding: 3rem 2rem;
   font-style: italic;
-  background: #f9f9f9;
-  border: 2px dashed #ddd;
+  background: hsl(var(--muted));
+  border: 2px dashed hsl(var(--border));
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -322,13 +315,13 @@ h1 {
 .empty-state p:first-child {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #4a90e2;
+  color: hsl(var(--primary));
   font-style: normal;
 }
 
 .empty-state-subtitle {
   font-size: 0.9rem;
-  color: #999;
+  color: hsl(var(--muted-foreground));
 }
 
 /* Estilos para impresión en A4 - optimizado para recortar */

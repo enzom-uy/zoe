@@ -1,0 +1,112 @@
+---
+import { OpenTypeEditor } from '../components/OpenTypeEditor';
+import '../styles/globals.css';
+---
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Editor OpenType - josephsophia</title>
+  </head>
+  <body class="p-8 max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold mb-2">✨ Editor de Alternativas OpenType</h1>
+    <p class="text-muted-foreground mb-6">
+      Selecciona letras individuales y aplica diferentes estilos caligráficos
+    </p>
+
+    <OpenTypeEditor
+      client:load
+      text="Ana María José Carlos Sofía"
+      fontSize={48}
+    />
+
+    <div class="mt-8 p-6 bg-muted rounded-lg">
+      <h2 class="text-xl font-semibold mb-4">📚 Guía de Características OpenType</h2>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="p-4 bg-background rounded border">
+          <h3 class="font-semibold mb-2">❤️ ss01 - Corazón final</h3>
+          <p class="text-sm text-muted-foreground mb-2">
+            Las letras terminan con un corazón caligráfico decorativo
+          </p>
+          <div style="font-family: CustomFont, Georgia, serif; font-size: 32px; font-feature-settings: 'ss01';">
+            María
+          </div>
+        </div>
+
+        <div class="p-4 bg-background rounded border">
+          <h3 class="font-semibold mb-2">✨❤️ ss02 - Línea + Corazón</h3>
+          <p class="text-sm text-muted-foreground mb-2">
+            Las letras comienzan con línea caligráfica y terminan en corazón
+          </p>
+          <div style="font-family: CustomFont, Georgia, serif; font-size: 32px; font-feature-settings: 'ss02';">
+            María
+          </div>
+        </div>
+
+        <div class="p-4 bg-background rounded border">
+          <h3 class="font-semibold mb-2">💫 swsh - Flourish</h3>
+          <p class="text-sm text-muted-foreground mb-2">
+            Añade flourishes caligráficos elegantes a las letras
+          </p>
+          <div style="font-family: CustomFont, Georgia, serif; font-size: 32px; font-feature-settings: 'swsh';">
+            María
+          </div>
+        </div>
+
+        <div class="p-4 bg-background rounded border">
+          <h3 class="font-semibold mb-2">🎭 salt - Alternativas</h3>
+          <p class="text-sm text-muted-foreground mb-2">
+            Variantes estilísticas alternativas de las letras
+          </p>
+          <div style="font-family: CustomFont, Georgia, serif; font-size: 32px; font-feature-settings: 'salt';">
+            María
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200">
+        <h3 class="font-semibold mb-2">🔍 Cómo usar:</h3>
+        <ol class="list-decimal list-inside space-y-2 text-sm">
+          <li>
+            <strong>Haz clic en cualquier letra</strong> en el área de texto para seleccionarla
+          </li>
+          <li>
+            <strong>Elige un estilo</strong> de los botones que aparecen debajo
+          </li>
+          <li>
+            La letra seleccionada se actualizará con la variante OpenType elegida
+          </li>
+          <li>
+            Usa <strong>"Aplicar a todas"</strong> para aplicar un estilo a todo el texto de una vez
+          </li>
+          <li>
+            El botón <strong>"Resetear"</strong> vuelve todas las letras al estilo normal
+          </li>
+        </ol>
+      </div>
+
+      <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950 rounded border border-yellow-200">
+        <h3 class="font-semibold mb-2">💡 Tips:</h3>
+        <ul class="list-disc list-inside space-y-1 text-sm">
+          <li>Prueba primero con <a href="/font-test" class="text-primary underline">la página de prueba</a> para ver todas las variantes</li>
+          <li>Las alternativas ❤️ (corazón final) quedan mejor en la última letra de una palabra</li>
+          <li>Las alternativas ✨❤️ (línea + corazón) funcionan bien en letras iniciales</li>
+          <li>Experimenta combinando diferentes estilos en la misma palabra</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 flex gap-4">
+      <a href="/" class="inline-flex items-center text-primary hover:underline">
+        ← Volver a la lista de nombres
+      </a>
+      <a href="/font-test" class="inline-flex items-center text-primary hover:underline">
+        Ver página de prueba de fuentes →
+      </a>
+    </div>
+  </body>
+</html>

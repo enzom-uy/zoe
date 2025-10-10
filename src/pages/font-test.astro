@@ -1,0 +1,290 @@
+---
+// Página de prueba para características OpenType de josephsophia.ttf
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba OpenType - josephsophia</title>
+  <style>
+    @font-face {
+      font-family: "CustomFont";
+      src: url("/fonts/josephsophia.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      margin-bottom: 2rem;
+      color: #333;
+    }
+
+    .test-section {
+      margin-bottom: 2rem;
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .test-section h2 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: #555;
+    }
+
+    .test-text {
+      font-family: 'CustomFont', Georgia, serif;
+      font-size: 48px;
+      margin: 1rem 0;
+      padding: 1.5rem;
+      background: #fafafa;
+      border-radius: 4px;
+      line-height: 1.6;
+    }
+
+    .feature-code {
+      font-family: monospace;
+      background: #2d2d2d;
+      color: #4ec9b0;
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.85rem;
+      display: inline-block;
+      margin-bottom: 0.5rem;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .comparison-item {
+      padding: 1rem;
+      background: #f9f9f9;
+      border: 2px solid #e0e0e0;
+      border-radius: 4px;
+    }
+
+    .comparison-item h3 {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+
+    .comparison-item .sample {
+      font-family: 'CustomFont', Georgia, serif;
+      font-size: 36px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 1rem;
+      text-align: left;
+    }
+
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .letter-showcase {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .letter-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      min-width: 100px;
+    }
+
+    .letter-box .letter {
+      font-family: 'CustomFont', Georgia, serif;
+      font-size: 48px;
+      margin-bottom: 0.5rem;
+    }
+
+    .letter-box .label {
+      font-size: 0.75rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔤 Análisis de Características OpenType: josephsophia.ttf</h1>
+
+  <!-- Normal -->
+  <div class="test-section">
+    <h2>📝 Normal (sin características OpenType)</h2>
+    <p><span class="feature-code">font-feature-settings: normal;</span></p>
+    <div class="test-text" style="font-feature-settings: normal;">
+      <div>abcdefghijklmnopqrstuvwxyz</div>
+      <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+      <div>Ana María José Carlos Sofía</div>
+    </div>
+  </div>
+
+  <!-- Stylistic Set 1 -->
+  <div class="test-section">
+    <h2>❤️ Stylistic Set 1 (ss01) - Letras con corazón al final</h2>
+    <p><span class="feature-code">font-feature-settings: "ss01";</span></p>
+    <div class="test-text" style="font-feature-settings: 'ss01';">
+      <div>abcdefghijklmnopqrstuvwxyz</div>
+      <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+      <div>Ana María José Carlos Sofía</div>
+    </div>
+  </div>
+
+  <!-- Stylistic Set 2 -->
+  <div class="test-section">
+    <h2>✨❤️ Stylistic Set 2 (ss02) - Línea inicial + corazón</h2>
+    <p><span class="feature-code">font-feature-settings: "ss02";</span></p>
+    <div class="test-text" style="font-feature-settings: 'ss02';">
+      <div>abcdefghijklmnopqrstuvwxyz</div>
+      <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+      <div>Ana María José Carlos Sofía</div>
+    </div>
+  </div>
+
+  <!-- Stylistic Set 3 -->
+  <div class="test-section">
+    <h2>🎨 Stylistic Set 3 (ss03)</h2>
+    <p><span class="feature-code">font-feature-settings: "ss03";</span></p>
+    <div class="test-text" style="font-feature-settings: 'ss03';">
+      <div>abcdefghijklmnopqrstuvwxyz</div>
+      <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+      <div>Ana María José Carlos Sofía</div>
+    </div>
+  </div>
+
+  <!-- Swash -->
+  <div class="test-section">
+    <h2>💫 Swash (swsh) - Flourishes caligráficos</h2>
+    <p><span class="feature-code">font-feature-settings: "swsh";</span></p>
+    <div class="test-text" style="font-feature-settings: 'swsh';">
+      <div>abcdefghijklmnopqrstuvwxyz</div>
+      <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+      <div>Ana María José Carlos Sofía</div>
+    </div>
+  </div>
+
+  <!-- Contextual Alternates -->
+  <div class="test-section">
+    <h2>🔄 Contextual Alternates (calt)</h2>
+    <p><span class="feature-code">font-feature-settings: "calt";</span></p>
+    <div class="test-text" style="font-feature-settings: 'calt';">
+      <div>abcdefghijklmnopqrstuvwxyz</div>
+      <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+      <div>Ana María José Carlos Sofía</div>
+    </div>
+  </div>
+
+  <!-- Stylistic Alternates -->
+  <div class="test-section">
+    <h2>🎭 Stylistic Alternates (salt)</h2>
+    <p><span class="feature-code">font-feature-settings: "salt";</span></p>
+    <div class="test-text" style="font-feature-settings: 'salt';">
+      <div>abcdefghijklmnopqrstuvwxyz</div>
+      <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+      <div>Ana María José Carlos Sofía</div>
+    </div>
+  </div>
+
+  <!-- Comparación lado a lado -->
+  <div class="test-section">
+    <h2>📊 Comparación de características</h2>
+    <div class="comparison-grid">
+      <div class="comparison-item">
+        <h3>Normal</h3>
+        <div class="sample" style="font-feature-settings: normal;">Ana María</div>
+      </div>
+      <div class="comparison-item">
+        <h3>ss01 (corazón final)</h3>
+        <div class="sample" style="font-feature-settings: 'ss01';">Ana María</div>
+      </div>
+      <div class="comparison-item">
+        <h3>ss02 (línea + corazón)</h3>
+        <div class="sample" style="font-feature-settings: 'ss02';">Ana María</div>
+      </div>
+      <div class="comparison-item">
+        <h3>ss03</h3>
+        <div class="sample" style="font-feature-settings: 'ss03';">Ana María</div>
+      </div>
+      <div class="comparison-item">
+        <h3>swsh (flourish)</h3>
+        <div class="sample" style="font-feature-settings: 'swsh';">Ana María</div>
+      </div>
+      <div class="comparison-item">
+        <h3>salt (alternates)</h3>
+        <div class="sample" style="font-feature-settings: 'salt';">Ana María</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Showcase de letras individuales -->
+  <div class="test-section">
+    <h2>🔡 Showcase de letras individuales</h2>
+    <p>Compara las mismas letras con diferentes características OpenType:</p>
+    <div class="letter-showcase">
+      <div class="letter-box">
+        <div class="letter" style="font-feature-settings: normal;">a</div>
+        <div class="label">Normal</div>
+      </div>
+      <div class="letter-box">
+        <div class="letter" style="font-feature-settings: 'ss01';">a</div>
+        <div class="label">ss01</div>
+      </div>
+      <div class="letter-box">
+        <div class="letter" style="font-feature-settings: 'ss02';">a</div>
+        <div class="label">ss02</div>
+      </div>
+      <div class="letter-box">
+        <div class="letter" style="font-feature-settings: 'swsh';">a</div>
+        <div class="label">swsh</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="test-section" style="background: #fffbea; border: 2px solid #f7dc6f;">
+    <h2>📝 Instrucciones de uso</h2>
+    <p><strong>Basándome en esta página de prueba, puedes determinar:</strong></p>
+    <ol>
+      <li><strong>ss01</strong>: Probablemente las letras con corazón al final</li>
+      <li><strong>ss02</strong>: Probablemente las letras con línea caligráfica inicial + corazón</li>
+      <li><strong>swsh</strong>: Variantes con flourishes adicionales</li>
+      <li><strong>salt</strong>: Alternativas estilísticas generales</li>
+      <li><strong>calt</strong>: Alternativas contextuales (se aplican automáticamente según el contexto)</li>
+    </ol>
+    <p style="margin-top: 1rem;"><strong>Navega a esta página:</strong> <a href="/font-test" style="color: #4a90e2; text-decoration: underline;">http://localhost:4321/font-test</a></p>
+  </div>
+</body>
+</html>
