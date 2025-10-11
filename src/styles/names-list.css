@@ -172,6 +172,12 @@ h1 {
     color: hsl(var(--primary));
   }
 
+  /* Estilos para nombres en el Command Palette */
+  [cmdk-item] span[style*="CustomFont"] {
+    font-size: 1.1rem !important;
+    line-height: 1.4;
+  }
+
   /* Drop zone para drag and drop */
   .drop-zone {
     min-height: 200px;

@@ -214,6 +214,10 @@ export default function NamesList() {
         setMode={setCommandMode}
         names={names}
         onEditName={handleCommandEditName}
+        onDeleteNames={(ids) => {
+          setNames(names.filter((item) => !ids.includes(item.id)));
+          toast.success(`${ids.length} nombre(s) eliminado(s) correctamente`);
+        }}
       />
 
       <Card className="input-section">

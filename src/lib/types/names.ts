@@ -10,7 +10,7 @@ export interface NameItem {
   fontSize?: number;
 }
 
-export type CommandMode = "main" | "edit";
+export type CommandMode = "main" | "edit" | "delete";
 
 export interface LetterStyle {
   feature: string;

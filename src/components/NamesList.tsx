@@ -13,6 +13,7 @@ import {
   CommandItem,
   CommandList,
 } from "./ui/command";
+import { useConfirmDialog } from "./ui/confirm-dialog";
 import { Upload, Plus, Trash2, Edit2, Check, X, Wand2 } from "lucide-react";
 
 interface CharStyle {
@@ -46,11 +47,19 @@ export default function NamesList() {
   const [showHint, setShowHint] = useState(true);
   const [editingFontSize, setEditingFontSize] = useState<number>(12);
   const [openCommand, setOpenCommand] = useState(false);
-  const [commandMode, setCommandMode] = useState<"main" | "edit">("main");
+  const [commandMode, setCommandMode] = useState<"main" | "edit" | "delete">(
+    "main"
+  );
   const [hasUsedCommand, setHasUsedCommand] = useState(false);
+  const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(
+    new Set()
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Diálogo de confirmación
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   const STORAGE_KEY = "names-list";
   const FONT_SIZE_KEY = "names-font-size";
@@ -168,6 +177,62 @@ export default function NamesList() {
     }
   }, [commandMode, openCommand]);
 
+  // Resetear selección cuando cambia el modo o se cierra el Command
+  useEffect(() => {
+    if (!openCommand || commandMode !== "delete") {
+      setSelectedForDeletion(new Set());
+    }
+  }, [openCommand, commandMode]);
+
+  // Manejar tecla ENTER y SPACE en modo delete
+  useEffect(() => {
+    if (!openCommand || commandMode !== "delete") return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && selectedForDeletion.size > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        const count = selectedForDeletion.size;
+        const idsToDelete = Array.from(selectedForDeletion);
+
+        confirm({
+          title: "Eliminar nombres seleccionados",
+          description: `¿Estás seguro de que quieres eliminar ${count} nombre(s) seleccionado(s)?`,
+          confirmText: "Eliminar",
+          variant: "destructive",
+          onConfirm: () => {
+            deleteNamesByIds(idsToDelete);
+            setSelectedForDeletion(new Set());
+            setOpenCommand(false);
+          },
+        });
+      } else if (e.key === " " && commandMode === "delete") {
+        e.preventDefault();
+        e.stopPropagation();
+        // Obtener el item actualmente seleccionado en el Command
+        const selectedItem = document.querySelector(
+          '[cmdk-item][aria-selected="true"]'
+        ) as HTMLElement;
+        if (selectedItem) {
+          const itemId = selectedItem.getAttribute("data-item-id");
+          if (itemId) {
+            const newSelected = new Set(selectedForDeletion);
+            if (newSelected.has(itemId)) {
+              newSelected.delete(itemId);
+            } else {
+              newSelected.add(itemId);
+            }
+            setSelectedForDeletion(newSelected);
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () =>
+      document.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, [openCommand, commandMode, selectedForDeletion]);
+
   const addName = () => {
     const trimmedName = newName.trim();
     if (trimmedName) {
@@ -190,44 +255,62 @@ export default function NamesList() {
 
   const deleteName = (id: string) => {
     const nameToDelete = names.find((item) => item.id === id);
-    if (confirm("¿Estás seguro de que quieres eliminar este nombre?")) {
-      setNames(names.filter((item) => item.id !== id));
-      setActiveId(null);
-      setSelectedIds(new Set());
-      toast.success(`"${nameToDelete?.name}" eliminado correctamente`);
-    }
+    confirm({
+      title: "Eliminar nombre",
+      description: `¿Estás seguro de que quieres eliminar "${nameToDelete?.name}"?`,
+      confirmText: "Eliminar",
+      variant: "destructive",
+      onConfirm: () => {
+        setNames(names.filter((item) => item.id !== id));
+        setActiveId(null);
+        setSelectedIds(new Set());
+        toast.success(`"${nameToDelete?.name}" eliminado correctamente`);
+      },
+    });
   };
 
   const deleteSelectedNames = () => {
     if (selectedIds.size === 0) return;
 
     const count = selectedIds.size;
-    if (
-      confirm(
-        `¿Estás seguro de que quieres eliminar ${count} nombre(s) seleccionado(s)?`
-      )
-    ) {
-      setNames(names.filter((item) => !selectedIds.has(item.id)));
-      setSelectedIds(new Set());
-      setActiveId(null);
-      toast.success(`${count} nombre(s) eliminado(s) correctamente`);
-    }
+    confirm({
+      title: "Eliminar nombres seleccionados",
+      description: `¿Estás seguro de que quieres eliminar ${count} nombre(s) seleccionado(s)?`,
+      confirmText: "Eliminar",
+      variant: "destructive",
+      onConfirm: () => {
+        setNames(names.filter((item) => !selectedIds.has(item.id)));
+        setSelectedIds(new Set());
+        setActiveId(null);
+        toast.success(`${count} nombre(s) eliminado(s) correctamente`);
+      },
+    });
+  };
+
+  const deleteNamesByIds = (ids: string[]) => {
+    const count = ids.length;
+    setNames(names.filter((item) => !ids.includes(item.id)));
+    setSelectedIds(new Set());
+    setActiveId(null);
+    toast.success(`${count} nombre(s) eliminado(s) correctamente`);
   };
 
   const deleteAllNames = () => {
     if (names.length === 0) return;
 
     const count = names.length;
-    if (
-      confirm(
-        `¿Estás seguro de que quieres eliminar todos los ${count} nombre(s)?`
-      )
-    ) {
-      setNames([]);
-      localStorage.removeItem(STORAGE_KEY);
-      setActiveId(null);
-      toast.success(`Todos los nombres (${count}) eliminados correctamente`);
-    }
+    confirm({
+      title: "Eliminar todos los nombres",
+      description: `¿Estás seguro de que quieres eliminar todos los ${count} nombre(s)? Esta acción no se puede deshacer.`,
+      confirmText: "Eliminar todos",
+      variant: "destructive",
+      onConfirm: () => {
+        setNames([]);
+        localStorage.removeItem(STORAGE_KEY);
+        setActiveId(null);
+        toast.success(`Todos los nombres (${count}) eliminados correctamente`);
+      },
+    });
   };
 
   const handleEditKeyPress = (e: React.KeyboardEvent) => {
@@ -476,6 +559,7 @@ export default function NamesList() {
   return (
     <>
       <Toaster />
+      <ConfirmDialog />
 
       {/* Command Dialog (Ctrl+K) */}
       <CommandDialog
@@ -502,10 +586,18 @@ export default function NamesList() {
                   <Edit2 className="mr-2 h-4 w-4" />
                   Editar un nombre
                 </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    setCommandMode("delete");
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar varios nombres
+                </CommandItem>
               </CommandGroup>
             </CommandList>
           </Command>
-        ) : (
+        ) : commandMode === "edit" ? (
           <Command key="edit-mode">
             <CommandInput
               placeholder="Buscar nombre para editar..."
@@ -532,6 +624,67 @@ export default function NamesList() {
                         handleCommandEditName(item.id);
                       }}
                     >
+                      <span
+                        style={{ fontFamily: "CustomFont, Georgia, serif" }}
+                      >
+                        {item.name}
+                      </span>
+                      {hasDuplicates && (
+                        <span className="duplicate-indicator">
+                          #{sameNamesBefore + 1}
+                        </span>
+                      )}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        ) : (
+          <Command key="delete-mode">
+            <CommandInput
+              placeholder={`Buscar y seleccionar (ESPACIO) - ${selectedForDeletion.size} seleccionado(s)...`}
+              autoFocus
+            />
+            <CommandList>
+              <CommandEmpty>No se encontraron nombres.</CommandEmpty>
+              <CommandGroup
+                heading={`Nombres (${selectedForDeletion.size} seleccionado(s) - ENTER para confirmar)`}
+              >
+                {names.map((item, index) => {
+                  const sameNamesBefore = names
+                    .slice(0, index)
+                    .filter((n) => n.name === item.name).length;
+                  const totalSameNames = names.filter(
+                    (n) => n.name === item.name
+                  ).length;
+                  const hasDuplicates = totalSameNames > 1;
+                  const isSelected = selectedForDeletion.has(item.id);
+
+                  return (
+                    <CommandItem
+                      key={item.id}
+                      value={`${item.name} ${item.id}`}
+                      data-item-id={item.id}
+                      onSelect={() => {
+                        const newSelected = new Set(selectedForDeletion);
+                        if (newSelected.has(item.id)) {
+                          newSelected.delete(item.id);
+                        } else {
+                          newSelected.add(item.id);
+                        }
+                        setSelectedForDeletion(newSelected);
+                      }}
+                      style={{
+                        backgroundColor: isSelected
+                          ? "hsl(var(--primary) / 0.15)"
+                          : undefined,
+                        borderLeft: isSelected
+                          ? "3px solid hsl(var(--primary))"
+                          : "3px solid transparent",
+                      }}
+                    >
+                      {isSelected && <Check className="mr-2 h-4 w-4" />}
                       <span
                         style={{ fontFamily: "CustomFont, Georgia, serif" }}
                       >
