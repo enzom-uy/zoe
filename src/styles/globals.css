@@ -68,6 +68,26 @@
   }
 }
 
+/* Prevenir cambio de layout cuando se abre el Command Dialog */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/* Forzar que el body nunca cambie su padding cuando se bloquea el scroll */
+body {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Asegurar que no se agregue compensación de scrollbar */
+body[style*="padding-right"],
+body[data-scroll-locked],
+body[data-body-scroll-lock] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
 /* Fuente personalizada */
 @font-face {
   font-family: "CustomFont";

@@ -4,6 +4,15 @@ import { Input } from "./ui/input";
 import { Card } from "./ui/card";
 import { Toaster } from "./ui/sonner";
 import { toast } from "sonner";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "./ui/command";
 import { Upload, Plus, Trash2, Edit2, Check, X, Wand2 } from "lucide-react";
 
 interface CharStyle {
@@ -15,6 +24,7 @@ interface NameItem {
   id: string;
   name: string;
   charStyles?: CharStyle[];
+  fontSize?: number;
 }
 
 export default function NamesList() {
@@ -34,6 +44,10 @@ export default function NamesList() {
   const [showStyleEditor, setShowStyleEditor] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showHint, setShowHint] = useState(true);
+  const [editingFontSize, setEditingFontSize] = useState<number>(12);
+  const [openCommand, setOpenCommand] = useState(false);
+  const [commandMode, setCommandMode] = useState<"main" | "edit">("main");
+  const [hasUsedCommand, setHasUsedCommand] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +55,7 @@ export default function NamesList() {
   const STORAGE_KEY = "names-list";
   const FONT_SIZE_KEY = "names-font-size";
   const HINT_KEY = "names-hint-dismissed";
+  const COMMAND_USED_KEY = "command-used";
 
   const LETTER_STYLES = [
     { feature: "normal", label: "Normal", emoji: "📝" },
@@ -74,6 +89,12 @@ export default function NamesList() {
     const hintDismissed = localStorage.getItem(HINT_KEY);
     if (hintDismissed === "true") {
       setShowHint(false);
+    }
+
+    // Cargar si el usuario ya usó el Command
+    const commandUsed = localStorage.getItem(COMMAND_USED_KEY);
+    if (commandUsed === "true") {
+      setHasUsedCommand(true);
     }
   }, []);
 
@@ -110,6 +131,42 @@ export default function NamesList() {
       editInputRef.current.select();
     }
   }, [editingId]);
+
+  // Atajo de teclado Ctrl+K para abrir el Command
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpenCommand((open) => {
+          // Marcar como usado cuando se abre por primera vez
+          if (!open && !hasUsedCommand) {
+            setHasUsedCommand(true);
+            localStorage.setItem(COMMAND_USED_KEY, "true");
+          }
+          return !open;
+        });
+        setCommandMode("main");
+      }
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, [hasUsedCommand]);
+
+  // Mantener el foco en el input del Command cuando cambia el modo
+  useEffect(() => {
+    if (openCommand) {
+      // Pequeño delay para asegurar que el DOM se haya actualizado
+      setTimeout(() => {
+        const input = document.querySelector(
+          "[cmdk-input]"
+        ) as HTMLInputElement;
+        if (input) {
+          input.focus();
+        }
+      }, 0);
+    }
+  }, [commandMode, openCommand]);
 
   const addName = () => {
     const trimmedName = newName.trim();
@@ -206,6 +263,23 @@ export default function NamesList() {
     }
   };
 
+  const handleCommandEditName = (id: string) => {
+    const item = names.find((n) => n.id === id);
+    if (item) {
+      // Scroll al elemento
+      const element = document.querySelector(`[data-id="${id}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      // Activar y empezar a editar
+      setActiveId(id);
+      setTimeout(() => {
+        startEdit(id, item.name);
+      }, 100);
+      setOpenCommand(false);
+    }
+  };
+
   const startEdit = (id: string, currentName: string) => {
     const item = names.find((n) => n.id === id);
     setEditingId(id);
@@ -221,6 +295,8 @@ export default function NamesList() {
     } else {
       setEditingStyles(new Map());
     }
+    // Cargar el tamaño de fuente del item o usar el global por defecto
+    setEditingFontSize(item?.fontSize || fontSize);
     setSelectedCharIndex(null);
     setShowStyleEditor(false);
   };
@@ -243,6 +319,8 @@ export default function NamesList() {
                 ...item,
                 name: trimmedValue,
                 charStyles: charStyles.length > 0 ? charStyles : undefined,
+                fontSize:
+                  editingFontSize !== fontSize ? editingFontSize : undefined,
               }
             : item
         )
@@ -272,6 +350,10 @@ export default function NamesList() {
   const handleCharClick = (index: number) => {
     if (editValue[index] === " ") return;
     setSelectedCharIndex(selectedCharIndex === index ? null : index);
+    // Abrir el panel de estilos automáticamente cuando se selecciona una letra
+    if (selectedCharIndex !== index) {
+      setShowStyleEditor(true);
+    }
   };
 
   const applyStyleToChar = (index: number, feature: string) => {
@@ -394,6 +476,81 @@ export default function NamesList() {
   return (
     <>
       <Toaster />
+
+      {/* Command Dialog (Ctrl+K) */}
+      <CommandDialog
+        open={openCommand}
+        onOpenChange={(open) => {
+          setOpenCommand(open);
+          // Resetear al modo principal cuando se cierra
+          if (!open) {
+            setCommandMode("main");
+          }
+        }}
+      >
+        {commandMode === "main" ? (
+          <Command key="main-mode">
+            <CommandInput placeholder="Escribe un comando..." autoFocus />
+            <CommandList>
+              <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+              <CommandGroup heading="Acciones">
+                <CommandItem
+                  onSelect={() => {
+                    setCommandMode("edit");
+                  }}
+                >
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  Editar un nombre
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        ) : (
+          <Command key="edit-mode">
+            <CommandInput
+              placeholder="Buscar nombre para editar..."
+              autoFocus
+            />
+            <CommandList>
+              <CommandEmpty>No se encontraron nombres.</CommandEmpty>
+              <CommandGroup heading="Nombres">
+                {names.map((item, index) => {
+                  // Contar cuántos nombres iguales hay antes de este
+                  const sameNamesBefore = names
+                    .slice(0, index)
+                    .filter((n) => n.name === item.name).length;
+                  const totalSameNames = names.filter(
+                    (n) => n.name === item.name
+                  ).length;
+                  const hasDuplicates = totalSameNames > 1;
+
+                  return (
+                    <CommandItem
+                      key={item.id}
+                      value={`${item.name} ${item.id}`}
+                      onSelect={() => {
+                        handleCommandEditName(item.id);
+                      }}
+                    >
+                      <span
+                        style={{ fontFamily: "CustomFont, Georgia, serif" }}
+                      >
+                        {item.name}
+                      </span>
+                      {hasDuplicates && (
+                        <span className="duplicate-indicator">
+                          #{sameNamesBefore + 1}
+                        </span>
+                      )}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        )}
+      </CommandDialog>
+
       <Card className="input-section">
         <div className="input-group">
           <Input
@@ -425,6 +582,17 @@ export default function NamesList() {
             onChange={handleFileUpload}
             style={{ display: "none" }}
           />
+          <div
+            className={`command-hint ${
+              !hasUsedCommand ? "command-hint-animated" : ""
+            }`}
+          >
+            {!hasUsedCommand && <span className="command-hint-badge" />}
+            <kbd className="kbd-shortcut">Ctrl</kbd>
+            <span>+</span>
+            <kbd className="kbd-shortcut">K</kbd>
+            <span className="hint-text">Comandos</span>
+          </div>
         </div>
         <div className="font-size-control">
           <label htmlFor="fontSize">Tamaño de letra:</label>
@@ -510,7 +678,7 @@ export default function NamesList() {
                           className="styled-text-display"
                           style={{
                             fontFamily: "CustomFont, Georgia, serif",
-                            fontSize: `${fontSize}px`,
+                            fontSize: `${editingFontSize}px`,
                           }}
                         >
                           {editValue.split("").map((char, index) => {
@@ -562,8 +730,41 @@ export default function NamesList() {
                             setSelectedCharIndex(null);
                           }}
                           onKeyDown={handleEditKeyPress}
-                          style={{ fontSize: `${fontSize}px` }}
+                          style={{ fontSize: `${editingFontSize}px` }}
                         />
+                      </div>
+
+                      {/* Control de tamaño de fuente individual */}
+                      <div className="font-size-control">
+                        <label>Tamaño:</label>
+                        <Input
+                          type="number"
+                          value={editingFontSize}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Permitir cualquier valor durante la escritura
+                            const newSize = parseInt(value, 10);
+                            if (!isNaN(newSize)) {
+                              setEditingFontSize(newSize);
+                            } else if (value === "") {
+                              setEditingFontSize(8);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Validar solo cuando se pierde el foco
+                            const value = parseInt(e.target.value, 10);
+                            if (isNaN(value) || value < 8) {
+                              setEditingFontSize(8);
+                            } else if (value > 72) {
+                              setEditingFontSize(72);
+                            }
+                          }}
+                          min="8"
+                          max="72"
+                          className="font-size-input"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="font-size-unit">px</span>
                       </div>
 
                       {/* Botón para mostrar/ocultar editor de estilos */}
@@ -692,7 +893,7 @@ export default function NamesList() {
                       <span
                         className="name-text"
                         style={{
-                          fontSize: `${fontSize}px`,
+                          fontSize: `${item.fontSize || fontSize}px`,
                           fontFamily: "CustomFont, Georgia, serif",
                         }}
                       >
