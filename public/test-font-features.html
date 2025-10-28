@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Christmas and Santona Font Features</title>
+    <style>
+        @font-face {
+            font-family: "ChristmasSantona";
+            src: url("/fonts/Christmas%20and%20Santona.ttf") format("truetype");
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .test-text {
+            font-family: "ChristmasSantona", cursive;
+            font-size: 48px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .feature-label {
+            font-weight: bold;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎄 Christmas and Santona - OpenType Features Test</h1>
+
+    <div class="test-section">
+        <h2>Texto Base</h2>
+        <div class="feature-label">Normal (sin features):</div>
+        <div class="test-text">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Stylistic Set 01 (ss01)</h2>
+        <div class="feature-label">font-feature-settings: "ss01";</div>
+        <div class="test-text" style="font-feature-settings: 'ss01';">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Stylistic Set 02 (ss02)</h2>
+        <div class="feature-label">font-feature-settings: "ss02";</div>
+        <div class="test-text" style="font-feature-settings: 'ss02';">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Stylistic Set 03 (ss03)</h2>
+        <div class="feature-label">font-feature-settings: "ss03";</div>
+        <div class="test-text" style="font-feature-settings: 'ss03';">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Stylistic Set 04 (ss04)</h2>
+        <div class="feature-label">font-feature-settings: "ss04";</div>
+        <div class="test-text" style="font-feature-settings: 'ss04';">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Stylistic Set 05 (ss05)</h2>
+        <div class="feature-label">font-feature-settings: "ss05";</div>
+        <div class="test-text" style="font-feature-settings: 'ss05';">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Swash (swsh)</h2>
+        <div class="feature-label">font-feature-settings: "swsh";</div>
+        <div class="test-text" style="font-feature-settings: 'swsh';">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Contextual Alternates (calt)</h2>
+        <div class="feature-label">font-feature-settings: "calt";</div>
+        <div class="test-text" style="font-feature-settings: 'calt';">Sofia Maria</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Ligatures (liga)</h2>
+        <div class="feature-label">font-feature-settings: "liga";</div>
+        <div class="test-text" style="font-feature-settings: 'liga';">Sofia Maria ff fi fl</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Discretionary Ligatures (dlig)</h2>
+        <div class="feature-label">font-feature-settings: "dlig";</div>
+        <div class="test-text" style="font-feature-settings: 'dlig';">Sofia Maria ff fi fl</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Todas las Letras Minúsculas</h2>
+        <div class="feature-label">Normal:</div>
+        <div class="test-text">abcdefghijklmnopqrstuvwxyz</div>
+        <div class="feature-label">Con ss01:</div>
+        <div class="test-text" style="font-feature-settings: 'ss01';">abcdefghijklmnopqrstuvwxyz</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Todas las Letras Mayúsculas</h2>
+        <div class="feature-label">Normal:</div>
+        <div class="test-text">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+        <div class="feature-label">Con ss01:</div>
+        <div class="test-text" style="font-feature-settings: 'ss01';">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Instrucciones</h2>
+        <p>1. Abre las DevTools del navegador (F12)</p>
+        <p>2. Ve a la pestaña Console</p>
+        <p>3. Ejecuta el siguiente código para ver las features disponibles:</p>
+        <pre>
+document.fonts.forEach(font => {
+    console.log('Font:', font.family);
+});
+        </pre>
+        <p>4. Compara visualmente cada sección para ver qué features producen cambios</p>
+    </div>
+</body>
+</html>

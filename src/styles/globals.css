@@ -88,10 +88,26 @@ body[data-body-scroll-lock] {
   margin-right: 0 !important;
 }
 
-/* Fuente personalizada */
+/* Fuentes personalizadas */
 @font-face {
   font-family: "CustomFont";
   src: url("/fonts/josephsophia.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ChristmasSantona";
+  src: url("/fonts/Christmas%20and%20Santona.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ChristmasIcons";
+  src: url("/fonts/LettertypeMiesChristmasIcons-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;

@@ -2,10 +2,13 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload, Plus } from "lucide-react";
+import { FontSelector } from "./FontSelector";
 
 interface AddNameInputProps {
   newName: string;
   setNewName: (name: string) => void;
+  selectedFont: string;
+  setSelectedFont: (font: string) => void;
   onAddName: () => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   hasUsedCommand: boolean;
@@ -14,6 +17,8 @@ interface AddNameInputProps {
 export function AddNameInput({
   newName,
   setNewName,
+  selectedFont,
+  setSelectedFont,
   onAddName,
   onFileUpload,
   hasUsedCommand,
@@ -41,6 +46,11 @@ export function AddNameInput({
         onKeyPress={handleKeyPress}
         placeholder="Escribe un nombre..."
         className="flex-1"
+      />
+      <FontSelector
+        value={selectedFont}
+        onValueChange={setSelectedFont}
+        className="w-[200px]"
       />
       <Button onClick={onAddName} size="default">
         <Plus className="mr-2 h-4 w-4" />

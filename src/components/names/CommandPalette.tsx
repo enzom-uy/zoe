@@ -11,6 +11,13 @@ import { Edit2, Trash2, Check } from "lucide-react";
 import type { NameItem, CommandMode } from "@/lib/types/names";
 import { useState, useEffect } from "react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { AVAILABLE_FONTS } from "./FontSelector";
+
+// Función auxiliar para obtener la familia de fuente
+const getFontFamily = (fontValue: string): string => {
+  const font = AVAILABLE_FONTS.find((f) => f.value === fontValue);
+  return font ? font.family : "CustomFont, Georgia, serif";
+};
 
 interface CommandPaletteProps {
   open: boolean;
@@ -156,7 +163,7 @@ export function CommandPalette({
                       onEditName(item.id);
                     }}
                   >
-                    <span style={{ fontFamily: "CustomFont, Georgia, serif" }}>
+                    <span style={{ fontFamily: getFontFamily(item.font) }}>
                       {item.name}
                     </span>
                     {hasDuplicates && (
@@ -209,7 +216,7 @@ export function CommandPalette({
                     }}
                   >
                     {isSelected && <Check className="mr-2 h-4 w-4" />}
-                    <span style={{ fontFamily: "CustomFont, Georgia, serif" }}>
+                    <span style={{ fontFamily: getFontFamily(item.font) }}>
                       {item.name}
                     </span>
                     {hasDuplicates && (

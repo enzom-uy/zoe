@@ -14,16 +14,22 @@ import {
   CommandList,
 } from "./ui/command";
 import { useConfirmDialog } from "./ui/confirm-dialog";
+import { FontSelector, AVAILABLE_FONTS } from "./names/FontSelector";
+import { IconsGuide } from "./names/IconsGuide";
+import { getFontFamily, getFontStyles, getFontConfig } from "@/lib/fontConfig";
+import type { LetterStyle } from "@/lib/fontConfig";
 import { Upload, Plus, Trash2, Edit2, Check, X, Wand2 } from "lucide-react";
 
 interface CharStyle {
   index: number;
   feature: string;
+  font?: string; // Para edición avanzada: fuente por carácter
 }
 
 interface NameItem {
   id: string;
   name: string;
+  font: string; // Fuente principal del nombre
   charStyles?: CharStyle[];
   fontSize?: number;
 }
@@ -31,6 +37,7 @@ interface NameItem {
 export default function NamesList() {
   const [names, setNames] = useState<NameItem[]>([]);
   const [newName, setNewName] = useState("");
+  const [selectedFont, setSelectedFont] = useState("CustomFont"); // Fuente por defecto
   const [fontSize, setFontSize] = useState<number>(12);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -39,6 +46,9 @@ export default function NamesList() {
   const [editingStyles, setEditingStyles] = useState<Map<number, string>>(
     new Map()
   );
+  const [editingFonts, setEditingFonts] = useState<Map<number, string>>(
+    new Map()
+  ); // Para fuentes por carácter en el editor
   const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(
     null
   );
@@ -66,19 +76,29 @@ export default function NamesList() {
   const HINT_KEY = "names-hint-dismissed";
   const COMMAND_USED_KEY = "command-used";
 
-  const LETTER_STYLES = [
-    { feature: "normal", label: "Normal", emoji: "📝" },
-    { feature: "ss01", label: "Corazón final", emoji: "❤️" },
-    { feature: "ss02", label: "Línea inicio", emoji: "✨❤️" },
-    { feature: "ss03", label: "Línea final", emoji: "🎨" },
-  ];
+  // Obtener los estilos disponibles para la fuente que se está editando
+  const getAvailableStyles = (): LetterStyle[] => {
+    if (editingId) {
+      const editingItem = names.find((n) => n.id === editingId);
+      if (editingItem) {
+        return getFontStyles(editingItem.font);
+      }
+    }
+    return getFontStyles(selectedFont);
+  };
 
   // Cargar nombres del localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        setNames(JSON.parse(stored));
+        const loadedNames = JSON.parse(stored) as NameItem[];
+        // Migrar nombres antiguos sin fuente a la fuente por defecto
+        const migratedNames = loadedNames.map((item) => ({
+          ...item,
+          font: item.font || "CustomFont", // Asignar fuente por defecto si no existe
+        }));
+        setNames(migratedNames);
       } catch (e) {
         console.error("Error al cargar nombres:", e);
       }
@@ -239,6 +259,7 @@ export default function NamesList() {
       const newItem: NameItem = {
         id: Date.now().toString(),
         name: trimmedName,
+        font: selectedFont, // Guardar la fuente seleccionada
       };
       setNames([...names, newItem]);
       setNewName("");
@@ -371,12 +392,18 @@ export default function NamesList() {
     // Cargar estilos existentes si los hay
     if (item?.charStyles) {
       const stylesMap = new Map<number, string>();
+      const fontsMap = new Map<number, string>();
       item.charStyles.forEach((style) => {
         stylesMap.set(style.index, style.feature);
+        if (style.font) {
+          fontsMap.set(style.index, style.font);
+        }
       });
       setEditingStyles(stylesMap);
+      setEditingFonts(fontsMap);
     } else {
       setEditingStyles(new Map());
+      setEditingFonts(new Map());
     }
     // Cargar el tamaño de fuente del item o usar el global por defecto
     setEditingFontSize(item?.fontSize || fontSize);
@@ -387,11 +414,20 @@ export default function NamesList() {
   const saveEdit = () => {
     const trimmedValue = editValue.trim();
     if (trimmedValue && editingId) {
-      // Convertir el Map de estilos a array
+      // Convertir el Map de estilos y fuentes a array
       const charStyles: CharStyle[] = [];
       editingStyles.forEach((feature, index) => {
-        if (feature !== "normal" && index < trimmedValue.length) {
-          charStyles.push({ index, feature });
+        if (index < trimmedValue.length) {
+          const charStyle: CharStyle = { index, feature };
+          // Agregar fuente si existe para este carácter
+          const font = editingFonts.get(index);
+          if (font) {
+            charStyle.font = font;
+          }
+          // Solo agregar si no es normal o tiene fuente personalizada
+          if (feature !== "normal" || font) {
+            charStyles.push(charStyle);
+          }
         }
       });
 
@@ -411,6 +447,7 @@ export default function NamesList() {
       setEditingId(null);
       setEditValue("");
       setEditingStyles(new Map());
+      setEditingFonts(new Map());
       setSelectedCharIndex(null);
       setShowStyleEditor(false);
       toast.success(`"${trimmedValue}" actualizado correctamente`);
@@ -457,8 +494,9 @@ export default function NamesList() {
           newStyles.set(index, feature);
         }
       });
+      const availableStyles = getAvailableStyles();
       const styleName =
-        LETTER_STYLES.find((s) => s.feature === feature)?.label || feature;
+        availableStyles.find((s) => s.feature === feature)?.label || feature;
       toast.success(`Estilo "${styleName}" aplicado a todos los caracteres`);
     }
     setEditingStyles(newStyles);
@@ -503,6 +541,7 @@ export default function NamesList() {
       const newItems: NameItem[] = lines.map((line, index) => ({
         id: `${Date.now()}-${index}`,
         name: line,
+        font: selectedFont, // Usar la fuente seleccionada actualmente
       }));
 
       // Agregar a los nombres existentes
@@ -716,6 +755,14 @@ export default function NamesList() {
             autoComplete="off"
             className="max-w-md"
           />
+          <div className="flex items-center gap-0">
+            <FontSelector
+              value={selectedFont}
+              onValueChange={setSelectedFont}
+              className="w-[200px]"
+            />
+            <IconsGuide />
+          </div>
           <Button onClick={addName} size="default">
             <Plus className="mr-2 h-4 w-4" />
             Agregar
@@ -830,13 +877,17 @@ export default function NamesList() {
                         <div
                           className="styled-text-display"
                           style={{
-                            fontFamily: "CustomFont, Georgia, serif",
+                            fontFamily: getFontFamily(
+                              names.find((n) => n.id === editingId)?.font ||
+                                selectedFont
+                            ),
                             fontSize: `${editingFontSize}px`,
                           }}
                         >
                           {editValue.split("").map((char, index) => {
                             const feature =
                               editingStyles.get(index) || "normal";
+                            const charFont = editingFonts.get(index);
                             const isSelected = selectedCharIndex === index;
                             const isSpace = char === " ";
 
@@ -849,6 +900,9 @@ export default function NamesList() {
                                 style={{
                                   fontFeatureSettings:
                                     getFontFeatureSettings(feature),
+                                  fontFamily: charFont
+                                    ? getFontFamily(charFont)
+                                    : undefined,
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -870,15 +924,22 @@ export default function NamesList() {
                           onChange={(e) => {
                             const newValue = e.target.value;
                             setEditValue(newValue);
-                            // Ajustar estilos si el texto cambió de longitud
+                            // Ajustar estilos y fuentes si el texto cambió de longitud
                             if (newValue.length < editValue.length) {
                               const newStyles = new Map<number, string>();
+                              const newFonts = new Map<number, string>();
                               editingStyles.forEach((feature, idx) => {
                                 if (idx < newValue.length) {
                                   newStyles.set(idx, feature);
                                 }
                               });
+                              editingFonts.forEach((font, idx) => {
+                                if (idx < newValue.length) {
+                                  newFonts.set(idx, font);
+                                }
+                              });
                               setEditingStyles(newStyles);
+                              setEditingFonts(newFonts);
                             }
                             setSelectedCharIndex(null);
                           }}
@@ -975,8 +1036,34 @@ export default function NamesList() {
                                 </span>
                                 " (pos {selectedCharIndex + 1})
                               </p>
+
+                              {/* Selector de fuente para el carácter */}
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold mb-1">
+                                  Fuente:
+                                </p>
+                                <div className="flex items-center gap-0">
+                                  <FontSelector
+                                    value={
+                                      editingFonts.get(selectedCharIndex) ||
+                                      selectedFont
+                                    }
+                                    onValueChange={(font) => {
+                                      const newFonts = new Map(editingFonts);
+                                      newFonts.set(selectedCharIndex, font);
+                                      setEditingFonts(newFonts);
+                                    }}
+                                    className="w-full"
+                                  />
+                                  <IconsGuide />
+                                </div>
+                              </div>
+
+                              <p className="text-xs font-semibold mb-2">
+                                Estilo OpenType:
+                              </p>
                               <div className="style-buttons">
-                                {LETTER_STYLES.map((style) => (
+                                {getAvailableStyles().map((style) => (
                                   <Button
                                     key={style.feature}
                                     variant={
@@ -1008,7 +1095,7 @@ export default function NamesList() {
                               Aplicar a todas:
                             </p>
                             <div className="style-buttons">
-                              {LETTER_STYLES.map((style) => (
+                              {getAvailableStyles().map((style) => (
                                 <Button
                                   key={style.feature}
                                   variant="secondary"
@@ -1033,10 +1120,9 @@ export default function NamesList() {
                               </Button>
                             </div>
                           </div>
-
                           <p className="text-xs text-muted-foreground mt-2">
                             💡 Haz click en una letra arriba para aplicarle un
-                            estilo
+                            estilo o fuente
                           </p>
                         </div>
                       )}
@@ -1047,7 +1133,7 @@ export default function NamesList() {
                         className="name-text"
                         style={{
                           fontSize: `${item.fontSize || fontSize}px`,
-                          fontFamily: "CustomFont, Georgia, serif",
+                          fontFamily: getFontFamily(item.font),
                         }}
                       >
                         {item.charStyles && item.charStyles.length > 0
@@ -1057,12 +1143,16 @@ export default function NamesList() {
                                 (cs) => cs.index === index
                               );
                               const feature = charStyle?.feature || "normal";
+                              const charFont = charStyle?.font;
                               return (
                                 <span
                                   key={index}
                                   style={{
                                     fontFeatureSettings:
                                       getFontFeatureSettings(feature),
+                                    fontFamily: charFont
+                                      ? getFontFamily(charFont)
+                                      : undefined,
                                   }}
                                 >
                                   {char}
