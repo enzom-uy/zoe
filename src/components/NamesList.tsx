@@ -16,6 +16,7 @@ import {
 import { useConfirmDialog } from "./ui/confirm-dialog";
 import { FontSelector, AVAILABLE_FONTS } from "./names/FontSelector";
 import { IconsGuide } from "./names/IconsGuide";
+import { ColorPicker } from "./names/ColorPicker";
 import { getFontFamily, getFontStyles, getFontConfig } from "@/lib/fontConfig";
 import type { LetterStyle } from "@/lib/fontConfig";
 import { Upload, Plus, Trash2, Edit2, Check, X, Wand2 } from "lucide-react";
@@ -24,12 +25,14 @@ interface CharStyle {
   index: number;
   feature: string;
   font?: string; // Para edición avanzada: fuente por carácter
+  color?: string; // Para edición avanzada: color por carácter
 }
 
 interface NameItem {
   id: string;
   name: string;
   font: string; // Fuente principal del nombre
+  color: string; // Color principal del nombre
   charStyles?: CharStyle[];
   fontSize?: number;
 }
@@ -38,6 +41,7 @@ export default function NamesList() {
   const [names, setNames] = useState<NameItem[]>([]);
   const [newName, setNewName] = useState("");
   const [selectedFont, setSelectedFont] = useState("CustomFont"); // Fuente por defecto
+  const [selectedColor, setSelectedColor] = useState("#000000"); // Color por defecto (negro)
   const [fontSize, setFontSize] = useState<number>(12);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -49,9 +53,12 @@ export default function NamesList() {
   const [editingFonts, setEditingFonts] = useState<Map<number, string>>(
     new Map()
   ); // Para fuentes por carácter en el editor
-  const [selectedCharIndex, setSelectedCharIndex] = useState<number | null>(
-    null
-  );
+  const [editingColors, setEditingColors] = useState<Map<number, string>>(
+    new Map()
+  ); // Para colores por carácter en el editor
+  const [selectedCharIndexes, setSelectedCharIndexes] = useState<Set<number>>(
+    new Set()
+  ); // Cambiado a Set para permitir selección múltiple
   const [showStyleEditor, setShowStyleEditor] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showHint, setShowHint] = useState(true);
@@ -93,10 +100,11 @@ export default function NamesList() {
     if (stored) {
       try {
         const loadedNames = JSON.parse(stored) as NameItem[];
-        // Migrar nombres antiguos sin fuente a la fuente por defecto
+        // Migrar nombres antiguos sin fuente o color a valores por defecto
         const migratedNames = loadedNames.map((item) => ({
           ...item,
           font: item.font || "CustomFont", // Asignar fuente por defecto si no existe
+          color: item.color || "#000000", // Asignar color negro por defecto si no existe
         }));
         setNames(migratedNames);
       } catch (e) {
@@ -260,6 +268,7 @@ export default function NamesList() {
         id: Date.now().toString(),
         name: trimmedName,
         font: selectedFont, // Guardar la fuente seleccionada
+        color: selectedColor, // Guardar el color seleccionado
       };
       setNames([...names, newItem]);
       setNewName("");
@@ -393,28 +402,34 @@ export default function NamesList() {
     if (item?.charStyles) {
       const stylesMap = new Map<number, string>();
       const fontsMap = new Map<number, string>();
+      const colorsMap = new Map<number, string>();
       item.charStyles.forEach((style) => {
         stylesMap.set(style.index, style.feature);
         if (style.font) {
           fontsMap.set(style.index, style.font);
         }
+        if (style.color) {
+          colorsMap.set(style.index, style.color);
+        }
       });
       setEditingStyles(stylesMap);
       setEditingFonts(fontsMap);
+      setEditingColors(colorsMap);
     } else {
       setEditingStyles(new Map());
       setEditingFonts(new Map());
+      setEditingColors(new Map());
     }
     // Cargar el tamaño de fuente del item o usar el global por defecto
     setEditingFontSize(item?.fontSize || fontSize);
-    setSelectedCharIndex(null);
+    setSelectedCharIndexes(new Set());
     setShowStyleEditor(false);
   };
 
   const saveEdit = () => {
     const trimmedValue = editValue.trim();
     if (trimmedValue && editingId) {
-      // Convertir el Map de estilos y fuentes a array
+      // Convertir el Map de estilos, fuentes y colores a array
       const charStyles: CharStyle[] = [];
       editingStyles.forEach((feature, index) => {
         if (index < trimmedValue.length) {
@@ -424,8 +439,13 @@ export default function NamesList() {
           if (font) {
             charStyle.font = font;
           }
-          // Solo agregar si no es normal o tiene fuente personalizada
-          if (feature !== "normal" || font) {
+          // Agregar color si existe para este carácter
+          const color = editingColors.get(index);
+          if (color) {
+            charStyle.color = color;
+          }
+          // Solo agregar si no es normal o tiene fuente/color personalizada
+          if (feature !== "normal" || font || color) {
             charStyles.push(charStyle);
           }
         }
@@ -448,7 +468,8 @@ export default function NamesList() {
       setEditValue("");
       setEditingStyles(new Map());
       setEditingFonts(new Map());
-      setSelectedCharIndex(null);
+      setEditingColors(new Map());
+      setSelectedCharIndexes(new Set());
       setShowStyleEditor(false);
       toast.success(`"${trimmedValue}" actualizado correctamente`);
     }
@@ -458,7 +479,7 @@ export default function NamesList() {
     setEditingId(null);
     setEditValue("");
     setEditingStyles(new Map());
-    setSelectedCharIndex(null);
+    setSelectedCharIndexes(new Set());
     setShowStyleEditor(false);
   };
 
@@ -467,13 +488,25 @@ export default function NamesList() {
     localStorage.setItem(HINT_KEY, "true");
   };
 
-  const handleCharClick = (index: number) => {
+  const handleCharClick = (index: number, ctrlKey: boolean = false) => {
     if (editValue[index] === " ") return;
-    setSelectedCharIndex(selectedCharIndex === index ? null : index);
-    // Abrir el panel de estilos automáticamente cuando se selecciona una letra
-    if (selectedCharIndex !== index) {
-      setShowStyleEditor(true);
+
+    if (ctrlKey) {
+      // CTRL + Click: agregar/quitar de la selección múltiple
+      const newSelection = new Set(selectedCharIndexes);
+      if (newSelection.has(index)) {
+        newSelection.delete(index);
+      } else {
+        newSelection.add(index);
+      }
+      setSelectedCharIndexes(newSelection);
+    } else {
+      // Click normal: seleccionar solo este carácter
+      setSelectedCharIndexes(new Set([index]));
     }
+
+    // Abrir el panel de estilos automáticamente cuando se selecciona una letra
+    setShowStyleEditor(true);
   };
 
   const applyStyleToChar = (index: number, feature: string) => {
@@ -500,13 +533,27 @@ export default function NamesList() {
       toast.success(`Estilo "${styleName}" aplicado a todos los caracteres`);
     }
     setEditingStyles(newStyles);
-    setSelectedCharIndex(null);
+    setSelectedCharIndexes(new Set());
   };
 
   const resetAllStyles = () => {
     setEditingStyles(new Map());
-    setSelectedCharIndex(null);
+    setSelectedCharIndexes(new Set());
     toast.success("Todos los estilos han sido restablecidos");
+  };
+
+  const applyColorToAll = (color: string) => {
+    const newColors = new Map<number, string>();
+    editValue.split("").forEach((char, index) => {
+      newColors.set(index, color);
+    });
+    setEditingColors(newColors);
+    toast.success(`Color aplicado a todos los caracteres`);
+  };
+
+  const resetAllColors = () => {
+    setEditingColors(new Map());
+    toast.success("Colores restablecidos");
   };
 
   const getFontFeatureSettings = (feature: string): string => {
@@ -542,6 +589,7 @@ export default function NamesList() {
         id: `${Date.now()}-${index}`,
         name: line,
         font: selectedFont, // Usar la fuente seleccionada actualmente
+        color: selectedColor, // Usar el color seleccionado actualmente
       }));
 
       // Agregar a los nombres existentes
@@ -763,6 +811,11 @@ export default function NamesList() {
             />
             <IconsGuide />
           </div>
+          <ColorPicker
+            value={selectedColor}
+            onChange={setSelectedColor}
+            className="w-[120px]"
+          />
           <Button onClick={addName} size="default">
             <Plus className="mr-2 h-4 w-4" />
             Agregar
@@ -882,13 +935,17 @@ export default function NamesList() {
                                 selectedFont
                             ),
                             fontSize: `${editingFontSize}px`,
+                            color:
+                              names.find((n) => n.id === editingId)?.color ||
+                              selectedColor,
                           }}
                         >
                           {editValue.split("").map((char, index) => {
                             const feature =
                               editingStyles.get(index) || "normal";
                             const charFont = editingFonts.get(index);
-                            const isSelected = selectedCharIndex === index;
+                            const charColor = editingColors.get(index);
+                            const isSelected = selectedCharIndexes.has(index);
                             const isSpace = char === " ";
 
                             return (
@@ -903,10 +960,14 @@ export default function NamesList() {
                                   fontFamily: charFont
                                     ? getFontFamily(charFont)
                                     : undefined,
+                                  color: charColor || undefined,
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleCharClick(index);
+                                  handleCharClick(
+                                    index,
+                                    e.ctrlKey || e.metaKey
+                                  );
                                 }}
                               >
                                 {char}
@@ -924,10 +985,11 @@ export default function NamesList() {
                           onChange={(e) => {
                             const newValue = e.target.value;
                             setEditValue(newValue);
-                            // Ajustar estilos y fuentes si el texto cambió de longitud
+                            // Ajustar estilos, fuentes y colores si el texto cambió de longitud
                             if (newValue.length < editValue.length) {
                               const newStyles = new Map<number, string>();
                               const newFonts = new Map<number, string>();
+                              const newColors = new Map<number, string>();
                               editingStyles.forEach((feature, idx) => {
                                 if (idx < newValue.length) {
                                   newStyles.set(idx, feature);
@@ -938,10 +1000,16 @@ export default function NamesList() {
                                   newFonts.set(idx, font);
                                 }
                               });
+                              editingColors.forEach((color, idx) => {
+                                if (idx < newValue.length) {
+                                  newColors.set(idx, color);
+                                }
+                              });
                               setEditingStyles(newStyles);
                               setEditingFonts(newFonts);
+                              setEditingColors(newColors);
                             }
-                            setSelectedCharIndex(null);
+                            setSelectedCharIndexes(new Set());
                           }}
                           onKeyDown={handleEditKeyPress}
                           style={{ fontSize: `${editingFontSize}px` }}
@@ -1022,38 +1090,63 @@ export default function NamesList() {
                           className="style-editor-panel"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {selectedCharIndex !== null && (
+                          {selectedCharIndexes.size > 0 && (
                             <div className="char-style-selector">
                               <p className="text-xs font-semibold mb-2">
-                                Seleccionado: "
-                                <span
-                                  style={{
-                                    fontFamily: "CustomFont, Georgia, serif",
-                                    fontSize: "20px",
-                                  }}
-                                >
-                                  {editValue[selectedCharIndex]}
-                                </span>
-                                " (pos {selectedCharIndex + 1})
+                                {selectedCharIndexes.size === 1
+                                  ? `Seleccionado: "${
+                                      editValue[
+                                        Array.from(selectedCharIndexes)[0]
+                                      ]
+                                    }" (pos ${
+                                      Array.from(selectedCharIndexes)[0] + 1
+                                    })`
+                                  : `${selectedCharIndexes.size} caracteres seleccionados`}
                               </p>
 
-                              {/* Selector de fuente para el carácter */}
+                              {/* Selector de fuente para los caracteres seleccionados */}
                               <div className="mb-3">
                                 <p className="text-xs font-semibold mb-1">
-                                  Fuente:
+                                  Fuente y Color:
                                 </p>
-                                <div className="flex items-center gap-0">
+                                <div className="flex items-center gap-2">
                                   <FontSelector
                                     value={
-                                      editingFonts.get(selectedCharIndex) ||
-                                      selectedFont
+                                      selectedCharIndexes.size === 1
+                                        ? editingFonts.get(
+                                            Array.from(selectedCharIndexes)[0]
+                                          ) || selectedFont
+                                        : selectedFont
                                     }
                                     onValueChange={(font) => {
                                       const newFonts = new Map(editingFonts);
-                                      newFonts.set(selectedCharIndex, font);
+                                      selectedCharIndexes.forEach((index) => {
+                                        newFonts.set(index, font);
+                                      });
                                       setEditingFonts(newFonts);
                                     }}
                                     className="w-full"
+                                  />
+                                  <ColorPicker
+                                    value={
+                                      selectedCharIndexes.size === 1
+                                        ? editingColors.get(
+                                            Array.from(selectedCharIndexes)[0]
+                                          ) ||
+                                          names.find((n) => n.id === editingId)
+                                            ?.color ||
+                                          selectedColor
+                                        : names.find((n) => n.id === editingId)
+                                            ?.color || selectedColor
+                                    }
+                                    onChange={(color) => {
+                                      const newColors = new Map(editingColors);
+                                      selectedCharIndexes.forEach((index) => {
+                                        newColors.set(index, color);
+                                      });
+                                      setEditingColors(newColors);
+                                    }}
+                                    className="w-auto"
                                   />
                                   <IconsGuide />
                                 </div>
@@ -1067,20 +1160,29 @@ export default function NamesList() {
                                   <Button
                                     key={style.feature}
                                     variant={
-                                      editingStyles.get(selectedCharIndex) ===
-                                        style.feature ||
-                                      (style.feature === "normal" &&
-                                        !editingStyles.has(selectedCharIndex))
+                                      selectedCharIndexes.size === 1 &&
+                                      (editingStyles.get(
+                                        Array.from(selectedCharIndexes)[0]
+                                      ) === style.feature ||
+                                        (style.feature === "normal" &&
+                                          !editingStyles.has(
+                                            Array.from(selectedCharIndexes)[0]
+                                          )))
                                         ? "default"
                                         : "outline"
                                     }
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      applyStyleToChar(
-                                        selectedCharIndex,
-                                        style.feature
-                                      );
+                                      const newStyles = new Map(editingStyles);
+                                      selectedCharIndexes.forEach((index) => {
+                                        if (style.feature === "normal") {
+                                          newStyles.delete(index);
+                                        } else {
+                                          newStyles.set(index, style.feature);
+                                        }
+                                      });
+                                      setEditingStyles(newStyles);
                                     }}
                                   >
                                     {style.emoji} {style.label}
@@ -1120,9 +1222,39 @@ export default function NamesList() {
                               </Button>
                             </div>
                           </div>
+
+                          {/* Sección de colores globales */}
+                          <div className="style-actions mt-4">
+                            <p className="text-xs font-semibold mb-2">
+                              Cambiar color de todo el nombre:
+                            </p>
+                            <div className="flex gap-2 items-center">
+                              <ColorPicker
+                                value={
+                                  names.find((n) => n.id === editingId)
+                                    ?.color || selectedColor
+                                }
+                                onChange={(color) => {
+                                  applyColorToAll(color);
+                                }}
+                                className="flex-1"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  resetAllColors();
+                                }}
+                              >
+                                Resetear colores
+                              </Button>
+                            </div>
+                          </div>
+
                           <p className="text-xs text-muted-foreground mt-2">
-                            💡 Haz click en una letra arriba para aplicarle un
-                            estilo o fuente
+                            💡 Click en una letra para seleccionar | CTRL+Click
+                            para seleccionar múltiples
                           </p>
                         </div>
                       )}
@@ -1134,6 +1266,7 @@ export default function NamesList() {
                         style={{
                           fontSize: `${item.fontSize || fontSize}px`,
                           fontFamily: getFontFamily(item.font),
+                          color: item.color,
                         }}
                       >
                         {item.charStyles && item.charStyles.length > 0
@@ -1144,6 +1277,7 @@ export default function NamesList() {
                               );
                               const feature = charStyle?.feature || "normal";
                               const charFont = charStyle?.font;
+                              const charColor = charStyle?.color;
                               return (
                                 <span
                                   key={index}
@@ -1153,6 +1287,7 @@ export default function NamesList() {
                                     fontFamily: charFont
                                       ? getFontFamily(charFont)
                                       : undefined,
+                                    color: charColor || undefined,
                                   }}
                                 >
                                   {char}

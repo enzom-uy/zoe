@@ -2,12 +2,14 @@ export interface CharStyle {
   index: number;
   feature: string;
   font?: string; // Para edición avanzada: fuente por carácter
+  color?: string; // Para edición avanzada: color por carácter
 }
 
 export interface NameItem {
   id: string;
   name: string;
   font: string; // Fuente principal del nombre
+  color: string; // Color principal del nombre (hex)
   charStyles?: CharStyle[];
   fontSize?: number;
 }
