@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { Card } from "./ui/card";
 import { Toaster } from "./ui/sonner";
 import { toast } from "sonner";
@@ -71,7 +72,7 @@ export default function NamesList() {
   const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(
     new Set()
   );
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -272,7 +273,7 @@ export default function NamesList() {
       };
       setNames([...names, newItem]);
       setNewName("");
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
       toast.success(`"${trimmedName}" agregado correctamente`);
     }
   };
@@ -341,6 +342,30 @@ export default function NamesList() {
         toast.success(`Todos los nombres (${count}) eliminados correctamente`);
       },
     });
+  };
+
+  // Cambiar fuente de todos los nombres
+  const changeAllFonts = (newFont: string) => {
+    if (names.length === 0) return;
+
+    const updatedNames = names.map((item) => ({
+      ...item,
+      font: newFont,
+    }));
+    setNames(updatedNames);
+    toast.success(`Fuente cambiada a ${newFont} para todos los nombres`);
+  };
+
+  // Cambiar tamaño de letra de todos los nombres
+  const changeAllFontSizes = (newSize: number) => {
+    if (names.length === 0) return;
+
+    const updatedNames = names.map((item) => ({
+      ...item,
+      fontSize: newSize,
+    }));
+    setNames(updatedNames);
+    toast.success(`Tamaño cambiado a ${newSize}px para todos los nombres`);
   };
 
   const handleEditKeyPress = (e: React.KeyboardEvent) => {
@@ -793,15 +818,21 @@ export default function NamesList() {
 
       <Card className="input-section">
         <div className="input-group">
-          <Input
-            ref={inputRef}
-            type="text"
+          <Textarea
+            ref={textareaRef}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ingresa un nombre..."
+            onKeyDown={(e) => {
+              // Permitir Enter solo si no hay Shift presionado
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                addName();
+              }
+            }}
+            placeholder="Ingresa un nombre... (Shift+Enter para nueva línea)"
             autoComplete="off"
-            className="max-w-md"
+            className="max-w-md min-h-[40px] resize-y"
+            rows={1}
           />
           <div className="flex items-center gap-0">
             <FontSelector
@@ -852,14 +883,50 @@ export default function NamesList() {
           <Input
             id="fontSize"
             type="number"
-            min="8"
-            max="72"
+            min="1"
             value={fontSize}
             onChange={(e) => setFontSize(parseInt(e.target.value, 10) || 12)}
             className="font-size-input w-20"
           />
           <span className="font-size-unit">px</span>
         </div>
+
+        {/* Controles globales para cambiar fuente y tamaño de todos los nombres */}
+        {names.length > 0 && (
+          <div className="global-controls">
+            <p className="text-sm font-semibold mb-2">Cambiar todos los nombres:</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <label className="text-xs">Fuente:</label>
+                <FontSelector
+                  value={selectedFont}
+                  onValueChange={(font) => {
+                    changeAllFonts(font);
+                    setSelectedFont(font);
+                  }}
+                  className="w-[180px]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs">Tamaño:</label>
+                <Input
+                  type="number"
+                  min="1"
+                  defaultValue={fontSize}
+                  onChange={(e) => {
+                    const newSize = parseInt(e.target.value, 10);
+                    if (!isNaN(newSize) && newSize >= 1) {
+                      changeAllFontSizes(newSize);
+                    }
+                  }}
+                  className="w-20"
+                />
+                <span className="text-xs">px</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {names.length > 0 && (
           <div className="actions-section">
             {selectedIds.size > 0 && (
@@ -1029,20 +1096,17 @@ export default function NamesList() {
                             if (!isNaN(newSize)) {
                               setEditingFontSize(newSize);
                             } else if (value === "") {
-                              setEditingFontSize(8);
+                              setEditingFontSize(1);
                             }
                           }}
                           onBlur={(e) => {
                             // Validar solo cuando se pierde el foco
                             const value = parseInt(e.target.value, 10);
-                            if (isNaN(value) || value < 8) {
-                              setEditingFontSize(8);
-                            } else if (value > 72) {
-                              setEditingFontSize(72);
+                            if (isNaN(value) || value < 1) {
+                              setEditingFontSize(1);
                             }
                           }}
-                          min="8"
-                          max="72"
+                          min="1"
                           className="font-size-input"
                           onClick={(e) => e.stopPropagation()}
                         />

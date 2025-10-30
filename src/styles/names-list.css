@@ -52,6 +52,18 @@ h1 {
     padding: 0.5rem 0;
   }
 
+  .global-controls {
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+    background: hsl(var(--muted) / 0.3);
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+  }
+
+  .global-controls p {
+    margin-bottom: 0.5rem;
+  }
+
   .actions-section {
     display: flex;
     gap: 0.5rem;
@@ -321,7 +333,8 @@ h1 {
   .name-text {
     font-family: "CustomFont", Georgia, serif;
     flex: 1;
-    white-space: nowrap; /* Mantener nombres en una línea */
+    white-space: pre-wrap; /* Respetar saltos de línea y espacios */
+    word-break: break-word; /* Permitir que palabras largas se rompan */
   }
 
   /* Ocultar botones por defecto */
@@ -449,6 +462,8 @@ h1 {
 
 .name-text {
   font-family: "CustomFont", Georgia, serif;
+  white-space: pre-wrap; /* Respetar saltos de línea */
+  word-break: break-word;
   /* El tamaño se aplica dinámicamente desde React */
 }
 
@@ -550,7 +565,8 @@ h1 {
   .name-text {
     display: block !important;
     width: auto !important;
-    white-space: nowrap;
+    white-space: pre-wrap; /* Respetar saltos de línea en impresión */
+    word-break: break-word;
   }
 
   h1 {
