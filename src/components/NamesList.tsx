@@ -72,6 +72,8 @@ export default function NamesList() {
   const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(
     new Set()
   );
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -664,6 +666,66 @@ export default function NamesList() {
     }
   };
 
+  // Funciones para reordenar nombres con drag and drop
+  const handleDragStart = (e: React.DragEvent<HTMLLIElement>, id: string) => {
+    setDraggedItem(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", id);
+    // Agregar una clase visual al elemento arrastrado
+    e.currentTarget.style.opacity = "0.5";
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLLIElement>) => {
+    e.currentTarget.style.opacity = "1";
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLLIElement>, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedItem && draggedItem !== id) {
+      setDragOverItem(id);
+    }
+  };
+
+  const handleDragOverItem = (e: React.DragEvent<HTMLLIElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDropItem = (e: React.DragEvent<HTMLLIElement>, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem || draggedItem === targetId) {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      return;
+    }
+
+    // Encontrar los índices
+    const draggedIndex = names.findIndex((item) => item.id === draggedItem);
+    const targetIndex = names.findIndex((item) => item.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      return;
+    }
+
+    // Crear nueva copia del array reordenado
+    const newNames = [...names];
+    const [removed] = newNames.splice(draggedIndex, 1);
+    newNames.splice(targetIndex, 0, removed);
+
+    setNames(newNames);
+    setDraggedItem(null);
+    setDragOverItem(null);
+    toast.success("Nombre reordenado correctamente");
+  };
+
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
   };
@@ -986,8 +1048,14 @@ export default function NamesList() {
                     activeId === item.id ? "active" : ""
                   } ${editingId === item.id ? "editing" : ""} ${
                     selectedIds.has(item.id) ? "selected" : ""
-                  }`}
+                  } ${dragOverItem === item.id ? "drag-over" : ""}`}
                   data-id={item.id}
+                  draggable={editingId !== item.id}
+                  onDragStart={(e) => handleDragStart(e, item.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragEnter={(e) => handleDragEnter(e, item.id)}
+                  onDragOver={handleDragOverItem}
+                  onDrop={(e) => handleDropItem(e, item.id)}
                   onClick={(e) => toggleActive(item.id, e)}
                 >
                   {editingId === item.id ? (
