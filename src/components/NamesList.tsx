@@ -21,7 +21,7 @@ import { ColorPicker } from "./names/ColorPicker";
 import { AlignmentSelector } from "./names/AlignmentSelector";
 import { getFontFamily, getFontStyles, getFontConfig } from "@/lib/fontConfig";
 import type { LetterStyle } from "@/lib/fontConfig";
-import { Upload, Plus, Trash2, Edit2, Check, X, Wand2 } from "lucide-react";
+import { Upload, Plus, Trash2, Edit2, Check, X, Wand2, Undo2, Redo2 } from "lucide-react";
 
 interface CharStyle {
   index: number;
@@ -43,6 +43,8 @@ interface NameItem {
 
 export default function NamesList() {
   const [names, setNames] = useState<NameItem[]>([]);
+  const [history, setHistory] = useState<NameItem[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
   const [newName, setNewName] = useState("");
   const [selectedFont, setSelectedFont] = useState("CustomFont"); // Fuente por defecto
   const [selectedColor, setSelectedColor] = useState("#000000"); // Color por defecto (negro)
@@ -117,6 +119,9 @@ export default function NamesList() {
           color: item.color || "#000000", // Asignar color negro por defecto si no existe
         }));
         setNames(migratedNames);
+        // Inicializar el historial con el estado cargado
+        setHistory([migratedNames]);
+        setHistoryIndex(0);
       } catch (e) {
         console.error("Error al cargar nombres:", e);
       }
@@ -271,6 +276,63 @@ export default function NamesList() {
       document.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [openCommand, commandMode, selectedForDeletion]);
 
+  // Atajos de teclado para Deshacer (Ctrl+Z) y Rehacer (Ctrl+Shift+Z)
+  useEffect(() => {
+    const handleUndoRedo = (e: KeyboardEvent) => {
+      // No activar atajos si estamos editando un campo de texto
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "Z") {
+        e.preventDefault();
+        redo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        e.preventDefault();
+        undo();
+      }
+    };
+
+    document.addEventListener("keydown", handleUndoRedo);
+    return () => document.removeEventListener("keydown", handleUndoRedo);
+  }, [historyIndex, history]);
+
+  // Guardar estado en el historial cuando cambian los nombres
+  const saveToHistory = (newNames: NameItem[]) => {
+    // Eliminar estados futuros si estamos en medio del historial
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newNames);
+
+    // Limitar el historial a 50 estados para no consumir demasiada memoria
+    const limitedHistory = newHistory.slice(-50);
+
+    setHistory(limitedHistory);
+    setHistoryIndex(limitedHistory.length - 1);
+  };
+
+  // Función para deshacer
+  const undo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setNames(history[newIndex]);
+      toast.info("Cambio deshecho");
+    }
+  };
+
+  // Función para rehacer
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setNames(history[newIndex]);
+      toast.info("Cambio rehecho");
+    }
+  };
+
   const addName = () => {
     const trimmedName = newName.trim();
     if (trimmedName) {
@@ -282,7 +344,9 @@ export default function NamesList() {
         textAlign: selectedAlign, // Guardar la alineación seleccionada
         lineHeight: selectedLineHeight, // Guardar el espaciado de línea
       };
-      setNames([...names, newItem]);
+      const newNames = [...names, newItem];
+      setNames(newNames);
+      saveToHistory(newNames);
       setNewName("");
       textareaRef.current?.focus();
       toast.success(`"${trimmedName}" agregado correctamente`);
@@ -303,7 +367,9 @@ export default function NamesList() {
       confirmText: "Eliminar",
       variant: "destructive",
       onConfirm: () => {
-        setNames(names.filter((item) => item.id !== id));
+        const newNames = names.filter((item) => item.id !== id);
+        setNames(newNames);
+        saveToHistory(newNames);
         setActiveId(null);
         setSelectedIds(new Set());
         toast.success(`"${nameToDelete?.name}" eliminado correctamente`);
@@ -321,7 +387,9 @@ export default function NamesList() {
       confirmText: "Eliminar",
       variant: "destructive",
       onConfirm: () => {
-        setNames(names.filter((item) => !selectedIds.has(item.id)));
+        const newNames = names.filter((item) => !selectedIds.has(item.id));
+        setNames(newNames);
+        saveToHistory(newNames);
         setSelectedIds(new Set());
         setActiveId(null);
         toast.success(`${count} nombre(s) eliminado(s) correctamente`);
@@ -331,7 +399,9 @@ export default function NamesList() {
 
   const deleteNamesByIds = (ids: string[]) => {
     const count = ids.length;
-    setNames(names.filter((item) => !ids.includes(item.id)));
+    const newNames = names.filter((item) => !ids.includes(item.id));
+    setNames(newNames);
+    saveToHistory(newNames);
     setSelectedIds(new Set());
     setActiveId(null);
     toast.success(`${count} nombre(s) eliminado(s) correctamente`);
@@ -347,7 +417,9 @@ export default function NamesList() {
       confirmText: "Eliminar todos",
       variant: "destructive",
       onConfirm: () => {
-        setNames([]);
+        const newNames: NameItem[] = [];
+        setNames(newNames);
+        saveToHistory(newNames);
         localStorage.removeItem(STORAGE_KEY);
         setActiveId(null);
         toast.success(`Todos los nombres (${count}) eliminados correctamente`);
@@ -364,6 +436,7 @@ export default function NamesList() {
       font: newFont,
     }));
     setNames(updatedNames);
+    saveToHistory(updatedNames);
     toast.success(`Fuente cambiada a ${newFont} para todos los nombres`);
   };
 
@@ -376,6 +449,7 @@ export default function NamesList() {
       fontSize: newSize,
     }));
     setNames(updatedNames);
+    saveToHistory(updatedNames);
     toast.success(`Tamaño cambiado a ${newSize}px para todos los nombres`);
   };
 
@@ -491,25 +565,26 @@ export default function NamesList() {
         }
       });
 
-      setNames(
-        names.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                name: trimmedValue,
-                charStyles: charStyles.length > 0 ? charStyles : undefined,
-                fontSize:
-                  editingFontSize !== fontSize ? editingFontSize : undefined,
-                textAlign:
-                  editingAlign !== selectedAlign ? editingAlign : item.textAlign,
-                lineHeight:
-                  editingLineHeight !== selectedLineHeight
-                    ? editingLineHeight
-                    : item.lineHeight,
-              }
-            : item
-        )
+      const updatedNames = names.map((item) =>
+        item.id === editingId
+          ? {
+              ...item,
+              name: trimmedValue,
+              charStyles: charStyles.length > 0 ? charStyles : undefined,
+              fontSize:
+                editingFontSize !== fontSize ? editingFontSize : undefined,
+              textAlign:
+                editingAlign !== selectedAlign ? editingAlign : item.textAlign,
+              lineHeight:
+                editingLineHeight !== selectedLineHeight
+                  ? editingLineHeight
+                  : item.lineHeight,
+            }
+          : item
       );
+
+      setNames(updatedNames);
+      saveToHistory(updatedNames);
       setEditingId(null);
       setEditValue("");
       setEditingStyles(new Map());
@@ -639,7 +714,9 @@ export default function NamesList() {
       }));
 
       // Agregar a los nombres existentes
-      setNames([...names, ...newItems]);
+      const newNames = [...names, ...newItems];
+      setNames(newNames);
+      saveToHistory(newNames);
 
       // Limpiar el input de archivo
       if (fileInputRef.current) {
@@ -740,6 +817,7 @@ export default function NamesList() {
     newNames.splice(targetIndex, 0, removed);
 
     setNames(newNames);
+    saveToHistory(newNames);
     setDraggedItem(null);
     setDragOverItem(null);
     toast.success("Nombre reordenado correctamente");
@@ -988,6 +1066,30 @@ export default function NamesList() {
 
         {/* Controles de tamaño y cambios globales en una sola línea */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Botones de Deshacer y Rehacer */}
+          <div className="flex items-center gap-1">
+            <Button
+              onClick={undo}
+              disabled={historyIndex <= 0}
+              variant="outline"
+              size="sm"
+              title="Deshacer (Ctrl+Z)"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={redo}
+              disabled={historyIndex >= history.length - 1}
+              variant="outline"
+              size="sm"
+              title="Rehacer (Ctrl+Shift+Z)"
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="h-6 w-px bg-border" />
+
           <div className="flex items-center gap-2">
             <label htmlFor="fontSize" className="text-sm">Tamaño:</label>
             <Input
