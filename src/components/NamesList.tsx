@@ -1130,6 +1130,12 @@ export default function NamesList() {
                             const charColor = editingColors.get(index);
                             const isSelected = selectedCharIndexes.has(index);
                             const isSpace = char === " ";
+                            const isNewline = char === "\n";
+
+                            // Si es un salto de línea, renderizar un <br>
+                            if (isNewline) {
+                              return <br key={index} />;
+                            }
 
                             return (
                               <span

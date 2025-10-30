@@ -393,9 +393,7 @@ h1 {
     min-height: 60px;
     line-height: 1.6;
     cursor: text;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    display: block;
   }
 
   .char-editable {
