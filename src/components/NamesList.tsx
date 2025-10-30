@@ -1120,6 +1120,7 @@ export default function NamesList() {
                               selectedColor,
                             textAlign: editingAlign,
                             lineHeight: editingLineHeight,
+                            whiteSpace: "pre-wrap",
                           }}
                         >
                           {editValue.split("").map((char, index) => {
@@ -1209,7 +1210,98 @@ export default function NamesList() {
                         />
                       </div>
 
-                      {/* Control de tamaño de fuente individual */}
+                      {/* Controles principales: Fuente y Color */}
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <div className="flex items-center gap-0">
+                          <FontSelector
+                            value={
+                              names.find((n) => n.id === editingId)?.font ||
+                              selectedFont
+                            }
+                            onValueChange={(font) => {
+                              // Actualizar la fuente del nombre completo
+                              setNames(
+                                names.map((item) =>
+                                  item.id === editingId
+                                    ? { ...item, font }
+                                    : item
+                                )
+                              );
+                            }}
+                            className="w-[160px]"
+                          />
+                          <IconsGuide />
+                        </div>
+                        <ColorPicker
+                          value={
+                            names.find((n) => n.id === editingId)?.color ||
+                            selectedColor
+                          }
+                          onChange={(color) => {
+                            // Actualizar el color del nombre completo
+                            setNames(
+                              names.map((item) =>
+                                item.id === editingId ? { ...item, color } : item
+                              )
+                            );
+                          }}
+                          className="w-auto"
+                        />
+                      </div>
+
+                      {/* Controles de tamaño, alineación y espaciado */}
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <div className="flex items-center gap-1">
+                          <label className="text-xs">Tamaño:</label>
+                          <Input
+                            type="number"
+                            value={editingFontSize}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const newSize = parseInt(value, 10);
+                              if (!isNaN(newSize)) {
+                                setEditingFontSize(newSize);
+                              } else if (value === "") {
+                                setEditingFontSize(1);
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const value = parseInt(e.target.value, 10);
+                              if (isNaN(value) || value < 1) {
+                                setEditingFontSize(1);
+                              }
+                            }}
+                            min="1"
+                            className="w-14"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="text-xs">px</span>
+                        </div>
+
+                        <AlignmentSelector
+                          value={editingAlign}
+                          onChange={setEditingAlign}
+                        />
+
+                        <div className="flex items-center gap-1">
+                          <label className="text-xs">Esp:</label>
+                          <Input
+                            type="number"
+                            value={editingLineHeight}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value);
+                              if (!isNaN(value) && value >= 0.5 && value <= 5) {
+                                setEditingLineHeight(value);
+                              }
+                            }}
+                            min="0.5"
+                            max="5"
+                            step="0.1"
+                            className="w-14 px-2 py-1"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
 
                       {/* Botón para mostrar/ocultar editor de estilos */}
                       <div className="editing-actions">
