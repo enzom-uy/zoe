@@ -12,6 +12,8 @@ export interface NameItem {
   color: string; // Color principal del nombre (hex)
   charStyles?: CharStyle[];
   fontSize?: number;
+  textAlign?: "left" | "center" | "right"; // Alineación del texto
+  lineHeight?: number; // Espaciado entre líneas
 }
 
 export type CommandMode = "main" | "edit" | "delete";

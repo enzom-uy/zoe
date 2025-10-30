@@ -18,6 +18,7 @@ import { useConfirmDialog } from "./ui/confirm-dialog";
 import { FontSelector, AVAILABLE_FONTS } from "./names/FontSelector";
 import { IconsGuide } from "./names/IconsGuide";
 import { ColorPicker } from "./names/ColorPicker";
+import { AlignmentSelector } from "./names/AlignmentSelector";
 import { getFontFamily, getFontStyles, getFontConfig } from "@/lib/fontConfig";
 import type { LetterStyle } from "@/lib/fontConfig";
 import { Upload, Plus, Trash2, Edit2, Check, X, Wand2 } from "lucide-react";
@@ -36,6 +37,8 @@ interface NameItem {
   color: string; // Color principal del nombre
   charStyles?: CharStyle[];
   fontSize?: number;
+  textAlign?: "left" | "center" | "right"; // Alineación del texto
+  lineHeight?: number; // Espaciado entre líneas (por defecto 1.5)
 }
 
 export default function NamesList() {
@@ -43,6 +46,8 @@ export default function NamesList() {
   const [newName, setNewName] = useState("");
   const [selectedFont, setSelectedFont] = useState("CustomFont"); // Fuente por defecto
   const [selectedColor, setSelectedColor] = useState("#000000"); // Color por defecto (negro)
+  const [selectedAlign, setSelectedAlign] = useState<"left" | "center" | "right">("left"); // Alineación por defecto
+  const [selectedLineHeight, setSelectedLineHeight] = useState<number>(1.5); // Espaciado de línea por defecto
   const [fontSize, setFontSize] = useState<number>(12);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -64,6 +69,8 @@ export default function NamesList() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showHint, setShowHint] = useState(true);
   const [editingFontSize, setEditingFontSize] = useState<number>(12);
+  const [editingAlign, setEditingAlign] = useState<"left" | "center" | "right">("left");
+  const [editingLineHeight, setEditingLineHeight] = useState<number>(1.5);
   const [openCommand, setOpenCommand] = useState(false);
   const [commandMode, setCommandMode] = useState<"main" | "edit" | "delete">(
     "main"
@@ -75,7 +82,7 @@ export default function NamesList() {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Diálogo de confirmación
@@ -166,9 +173,9 @@ export default function NamesList() {
 
   // Focus en el input de edición cuando se activa
   useEffect(() => {
-    if (editingId && editInputRef.current) {
-      editInputRef.current.focus();
-      editInputRef.current.select();
+    if (editingId && editTextareaRef.current) {
+      editTextareaRef.current.focus();
+      editTextareaRef.current.select();
     }
   }, [editingId]);
 
@@ -272,6 +279,8 @@ export default function NamesList() {
         name: trimmedName,
         font: selectedFont, // Guardar la fuente seleccionada
         color: selectedColor, // Guardar el color seleccionado
+        textAlign: selectedAlign, // Guardar la alineación seleccionada
+        lineHeight: selectedLineHeight, // Guardar el espaciado de línea
       };
       setNames([...names, newItem]);
       setNewName("");
@@ -449,6 +458,10 @@ export default function NamesList() {
     }
     // Cargar el tamaño de fuente del item o usar el global por defecto
     setEditingFontSize(item?.fontSize || fontSize);
+    // Cargar la alineación del item o usar la seleccionada por defecto
+    setEditingAlign(item?.textAlign || selectedAlign);
+    // Cargar el espaciado de línea del item o usar el seleccionado por defecto
+    setEditingLineHeight(item?.lineHeight || selectedLineHeight);
     setSelectedCharIndexes(new Set());
     setShowStyleEditor(false);
   };
@@ -487,6 +500,12 @@ export default function NamesList() {
                 charStyles: charStyles.length > 0 ? charStyles : undefined,
                 fontSize:
                   editingFontSize !== fontSize ? editingFontSize : undefined,
+                textAlign:
+                  editingAlign !== selectedAlign ? editingAlign : item.textAlign,
+                lineHeight:
+                  editingLineHeight !== selectedLineHeight
+                    ? editingLineHeight
+                    : item.lineHeight,
               }
             : item
         )
@@ -896,19 +915,45 @@ export default function NamesList() {
             className="max-w-md min-h-[40px] resize-y"
             rows={1}
           />
-          <div className="flex items-center gap-0">
-            <FontSelector
-              value={selectedFont}
-              onValueChange={setSelectedFont}
-              className="w-[200px]"
+
+          {/* Grupo de controles de estilo */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-0">
+              <FontSelector
+                value={selectedFont}
+                onValueChange={setSelectedFont}
+                className="w-[160px]"
+              />
+              <IconsGuide />
+            </div>
+            <ColorPicker
+              value={selectedColor}
+              onChange={setSelectedColor}
+              className="w-auto"
             />
-            <IconsGuide />
+            <AlignmentSelector
+              value={selectedAlign}
+              onChange={setSelectedAlign}
+            />
+            <div className="flex items-center gap-1">
+              <label className="text-xs whitespace-nowrap">Esp:</label>
+              <Input
+                type="number"
+                value={selectedLineHeight}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (!isNaN(value) && value >= 0.5 && value <= 5) {
+                    setSelectedLineHeight(value);
+                  }
+                }}
+                min="0.5"
+                max="5"
+                step="0.1"
+                className="w-14 px-2 py-1"
+              />
+            </div>
           </div>
-          <ColorPicker
-            value={selectedColor}
-            onChange={setSelectedColor}
-            className="w-[120px]"
-          />
+
           <Button onClick={addName} size="default">
             <Plus className="mr-2 h-4 w-4" />
             Agregar
@@ -940,37 +985,37 @@ export default function NamesList() {
             <span className="hint-text">Comandos</span>
           </div>
         </div>
-        <div className="font-size-control">
-          <label htmlFor="fontSize">Tamaño de letra:</label>
-          <Input
-            id="fontSize"
-            type="number"
-            min="1"
-            value={fontSize}
-            onChange={(e) => setFontSize(parseInt(e.target.value, 10) || 12)}
-            className="font-size-input w-20"
-          />
-          <span className="font-size-unit">px</span>
-        </div>
 
-        {/* Controles globales para cambiar fuente y tamaño de todos los nombres */}
-        {names.length > 0 && (
-          <div className="global-controls">
-            <p className="text-sm font-semibold mb-2">Cambiar todos los nombres:</p>
-            <div className="flex items-center gap-3 flex-wrap">
+        {/* Controles de tamaño y cambios globales en una sola línea */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="fontSize" className="text-sm">Tamaño:</label>
+            <Input
+              id="fontSize"
+              type="number"
+              min="1"
+              value={fontSize}
+              onChange={(e) => setFontSize(parseInt(e.target.value, 10) || 12)}
+              className="w-16"
+            />
+            <span className="text-xs">px</span>
+          </div>
+
+          {names.length > 0 && (
+            <>
+              <div className="h-6 w-px bg-border" />
               <div className="flex items-center gap-2">
-                <label className="text-xs">Fuente:</label>
+                <label className="text-xs">Cambiar todos:</label>
                 <FontSelector
                   value={selectedFont}
                   onValueChange={(font) => {
                     changeAllFonts(font);
                     setSelectedFont(font);
                   }}
-                  className="w-[180px]"
+                  className="w-[140px]"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs">Tamaño:</label>
+              <div className="flex items-center gap-1">
                 <Input
                   type="number"
                   min="1"
@@ -981,13 +1026,13 @@ export default function NamesList() {
                       changeAllFontSizes(newSize);
                     }
                   }}
-                  className="w-20"
+                  className="w-14"
                 />
                 <span className="text-xs">px</span>
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {names.length > 0 && (
           <div className="actions-section">
@@ -1073,6 +1118,8 @@ export default function NamesList() {
                             color:
                               names.find((n) => n.id === editingId)?.color ||
                               selectedColor,
+                            textAlign: editingAlign,
+                            lineHeight: editingLineHeight,
                           }}
                         >
                           {editValue.split("").map((char, index) => {
@@ -1111,10 +1158,9 @@ export default function NamesList() {
                           })}
                         </div>
 
-                        {/* Input oculto para editar el texto */}
-                        <Input
-                          ref={editInputRef}
-                          type="text"
+                        {/* Textarea oculto para editar el texto */}
+                        <Textarea
+                          ref={editTextareaRef}
                           className="hidden-text-input"
                           value={editValue}
                           onChange={(e) => {
@@ -1146,40 +1192,24 @@ export default function NamesList() {
                             }
                             setSelectedCharIndexes(new Set());
                           }}
-                          onKeyDown={handleEditKeyPress}
-                          style={{ fontSize: `${editingFontSize}px` }}
+                          onKeyDown={(e) => {
+                            // Solo guardar con Enter si no hay Shift presionado
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              saveEdit();
+                            } else if (e.key === "Escape") {
+                              cancelEdit();
+                            }
+                          }}
+                          style={{
+                            fontSize: `${editingFontSize}px`,
+                            lineHeight: editingLineHeight,
+                          }}
+                          rows={3}
                         />
                       </div>
 
                       {/* Control de tamaño de fuente individual */}
-                      <div className="font-size-control">
-                        <label>Tamaño:</label>
-                        <Input
-                          type="number"
-                          value={editingFontSize}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            // Permitir cualquier valor durante la escritura
-                            const newSize = parseInt(value, 10);
-                            if (!isNaN(newSize)) {
-                              setEditingFontSize(newSize);
-                            } else if (value === "") {
-                              setEditingFontSize(1);
-                            }
-                          }}
-                          onBlur={(e) => {
-                            // Validar solo cuando se pierde el foco
-                            const value = parseInt(e.target.value, 10);
-                            if (isNaN(value) || value < 1) {
-                              setEditingFontSize(1);
-                            }
-                          }}
-                          min="1"
-                          className="font-size-input"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span className="font-size-unit">px</span>
-                      </div>
 
                       {/* Botón para mostrar/ocultar editor de estilos */}
                       <div className="editing-actions">
@@ -1399,6 +1429,10 @@ export default function NamesList() {
                           fontSize: `${item.fontSize || fontSize}px`,
                           fontFamily: getFontFamily(item.font),
                           color: item.color,
+                          textAlign: item.textAlign || "left",
+                          display: "block",
+                          width: "100%",
+                          lineHeight: item.lineHeight || 1.5,
                         }}
                       >
                         {item.charStyles && item.charStyles.length > 0
