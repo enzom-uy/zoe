@@ -52,6 +52,7 @@ export default function NamesList() {
   const [selectedLineHeight, setSelectedLineHeight] = useState<number>(1.5); // Espaciado de línea por defecto
   const [fontSize, setFontSize] = useState<number>(12);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null); // Para Shift+Click
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -169,6 +170,7 @@ export default function NamesList() {
       if (!target.closest(".name-item")) {
         setActiveId(null);
         setSelectedIds(new Set());
+        setLastSelectedId(null);
       }
     };
 
@@ -372,6 +374,7 @@ export default function NamesList() {
         saveToHistory(newNames);
         setActiveId(null);
         setSelectedIds(new Set());
+        setLastSelectedId(null);
         toast.success(`"${nameToDelete?.name}" eliminado correctamente`);
       },
     });
@@ -392,6 +395,7 @@ export default function NamesList() {
         saveToHistory(newNames);
         setSelectedIds(new Set());
         setActiveId(null);
+        setLastSelectedId(null);
         toast.success(`${count} nombre(s) eliminado(s) correctamente`);
       },
     });
@@ -404,6 +408,7 @@ export default function NamesList() {
     saveToHistory(newNames);
     setSelectedIds(new Set());
     setActiveId(null);
+    setLastSelectedId(null);
     toast.success(`${count} nombre(s) eliminado(s) correctamente`);
   };
 
@@ -422,6 +427,7 @@ export default function NamesList() {
         saveToHistory(newNames);
         localStorage.removeItem(STORAGE_KEY);
         setActiveId(null);
+        setLastSelectedId(null);
         toast.success(`Todos los nombres (${count}) eliminados correctamente`);
       },
     });
@@ -464,6 +470,30 @@ export default function NamesList() {
   const toggleActive = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Si se presiona Shift, activar selección por rango
+    if (e.shiftKey && lastSelectedId) {
+      const lastIndex = names.findIndex((item) => item.id === lastSelectedId);
+      const currentIndex = names.findIndex((item) => item.id === id);
+
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const start = Math.min(lastIndex, currentIndex);
+        const end = Math.max(lastIndex, currentIndex);
+
+        // Seleccionar todos los elementos en el rango
+        const rangeIds = names.slice(start, end + 1).map((item) => item.id);
+        const newSelected = new Set(selectedIds);
+
+        rangeIds.forEach((rangeId) => {
+          newSelected.add(rangeId);
+        });
+
+        setSelectedIds(newSelected);
+        setActiveId(id);
+        // No actualizar lastSelectedId en selección por rango
+        return;
+      }
+    }
+
     // Si se presiona Ctrl/Cmd, activar selección múltiple
     if (e.ctrlKey || e.metaKey) {
       const newSelected = new Set(selectedIds);
@@ -473,6 +503,7 @@ export default function NamesList() {
         newSelected.add(id);
       }
       setSelectedIds(newSelected);
+      setLastSelectedId(id); // Actualizar último seleccionado
       // Mantener activeId para mostrar botones
       if (newSelected.size > 0) {
         setActiveId(id);
@@ -483,6 +514,7 @@ export default function NamesList() {
       // Click normal: limpiar selección múltiple y alternar active
       setSelectedIds(new Set());
       setActiveId(activeId === id ? null : id);
+      setLastSelectedId(id); // Actualizar último seleccionado
     }
   };
 
@@ -1174,8 +1206,8 @@ export default function NamesList() {
             {names.length > 1 && selectedIds.size === 0 && showHint && (
               <div className="hint-message">
                 <span>
-                  💡 Usa <kbd>Ctrl+Click</kbd> para seleccionar varios nombres y
-                  eliminarlos juntos
+                  💡 Usa <kbd>Ctrl+Click</kbd> para seleccionar varios nombres,{" "}
+                  <kbd>Shift+Click</kbd> para seleccionar por rango
                 </span>
                 <Button
                   onClick={dismissHint}
