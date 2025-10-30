@@ -936,7 +936,7 @@ export default function NamesList() {
               onChange={setSelectedAlign}
             />
             <div className="flex items-center gap-1">
-              <label className="text-xs whitespace-nowrap">Esp:</label>
+              <label className="text-xs whitespace-nowrap">Espaciado vertical:</label>
               <Input
                 type="number"
                 value={selectedLineHeight}
