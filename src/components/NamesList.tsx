@@ -21,7 +21,17 @@ import { ColorPicker } from "./names/ColorPicker";
 import { AlignmentSelector } from "./names/AlignmentSelector";
 import { getFontFamily, getFontStyles, getFontConfig } from "@/lib/fontConfig";
 import type { LetterStyle } from "@/lib/fontConfig";
-import { Upload, Plus, Trash2, Edit2, Check, X, Wand2, Undo2, Redo2 } from "lucide-react";
+import {
+  Upload,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  Wand2,
+  Undo2,
+  Redo2,
+} from "lucide-react";
 
 interface CharStyle {
   index: number;
@@ -39,6 +49,8 @@ interface NameItem {
   fontSize?: number;
   textAlign?: "left" | "center" | "right"; // Alineación del texto
   lineHeight?: number; // Espaciado entre líneas (por defecto 1.5)
+  strokeColor?: string; // Color del contorno
+  strokeWidth?: number; // Ancho del contorno (en px)
 }
 
 export default function NamesList() {
@@ -48,7 +60,11 @@ export default function NamesList() {
   const [newName, setNewName] = useState("");
   const [selectedFont, setSelectedFont] = useState("CustomFont"); // Fuente por defecto
   const [selectedColor, setSelectedColor] = useState("#000000"); // Color por defecto (negro)
-  const [selectedAlign, setSelectedAlign] = useState<"left" | "center" | "right">("left"); // Alineación por defecto
+  const [selectedStrokeColor, setSelectedStrokeColor] = useState("#000000"); // Color de contorno por defecto
+  const [selectedStrokeWidth, setSelectedStrokeWidth] = useState<number>(0); // Sin contorno por defecto
+  const [selectedAlign, setSelectedAlign] = useState<
+    "left" | "center" | "right"
+  >("left"); // Alineación por defecto
   const [selectedLineHeight, setSelectedLineHeight] = useState<number>(1.5); // Espaciado de línea por defecto
   const [fontSize, setFontSize] = useState<number>(12);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -72,8 +88,13 @@ export default function NamesList() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showHint, setShowHint] = useState(true);
   const [editingFontSize, setEditingFontSize] = useState<number>(12);
-  const [editingAlign, setEditingAlign] = useState<"left" | "center" | "right">("left");
+  const [editingAlign, setEditingAlign] = useState<"left" | "center" | "right">(
+    "left"
+  );
   const [editingLineHeight, setEditingLineHeight] = useState<number>(1.5);
+  const [editingStrokeColor, setEditingStrokeColor] =
+    useState<string>("#000000");
+  const [editingStrokeWidth, setEditingStrokeWidth] = useState<number>(0);
   const [openCommand, setOpenCommand] = useState(false);
   const [commandMode, setCommandMode] = useState<"main" | "edit" | "delete">(
     "main"
@@ -345,6 +366,8 @@ export default function NamesList() {
         color: selectedColor, // Guardar el color seleccionado
         textAlign: selectedAlign, // Guardar la alineación seleccionada
         lineHeight: selectedLineHeight, // Guardar el espaciado de línea
+        strokeColor: selectedStrokeWidth > 0 ? selectedStrokeColor : undefined,
+        strokeWidth: selectedStrokeWidth > 0 ? selectedStrokeWidth : undefined,
       };
       const newNames = [...names, newItem];
       setNames(newNames);
@@ -459,6 +482,24 @@ export default function NamesList() {
     toast.success(`Tamaño cambiado a ${newSize}px para todos los nombres`);
   };
 
+  // Cambiar stroke de todos los nombres
+  const changeAllStrokes = (strokeColor: string, strokeWidth: number) => {
+    if (names.length === 0) return;
+
+    const updatedNames = names.map((item) => ({
+      ...item,
+      strokeColor: strokeWidth > 0 ? strokeColor : undefined,
+      strokeWidth: strokeWidth > 0 ? strokeWidth : undefined,
+    }));
+    setNames(updatedNames);
+    saveToHistory(updatedNames);
+    toast.success(
+      strokeWidth > 0
+        ? `Contorno de ${strokeWidth}px aplicado a todos los nombres`
+        : `Contorno removido de todos los nombres`
+    );
+  };
+
   const handleEditKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       saveEdit();
@@ -568,6 +609,9 @@ export default function NamesList() {
     setEditingAlign(item?.textAlign || selectedAlign);
     // Cargar el espaciado de línea del item o usar el seleccionado por defecto
     setEditingLineHeight(item?.lineHeight || selectedLineHeight);
+    // Cargar el stroke del item o usar el seleccionado por defecto
+    setEditingStrokeColor(item?.strokeColor || selectedStrokeColor);
+    setEditingStrokeWidth(item?.strokeWidth || selectedStrokeWidth);
     setSelectedCharIndexes(new Set());
     setShowStyleEditor(false);
   };
@@ -611,6 +655,10 @@ export default function NamesList() {
                 editingLineHeight !== selectedLineHeight
                   ? editingLineHeight
                   : item.lineHeight,
+              strokeColor:
+                editingStrokeWidth > 0 ? editingStrokeColor : undefined,
+              strokeWidth:
+                editingStrokeWidth > 0 ? editingStrokeWidth : undefined,
             }
           : item
       );
@@ -823,7 +871,10 @@ export default function NamesList() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDropItem = (e: React.DragEvent<HTMLLIElement>, targetId: string) => {
+  const handleDropItem = (
+    e: React.DragEvent<HTMLLIElement>,
+    targetId: string
+  ) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -1046,7 +1097,9 @@ export default function NamesList() {
               onChange={setSelectedAlign}
             />
             <div className="flex items-center gap-1">
-              <label className="text-xs whitespace-nowrap">Espaciado vertical:</label>
+              <label className="text-xs whitespace-nowrap">
+                Espaciado vertical:
+              </label>
               <Input
                 type="number"
                 value={selectedLineHeight}
@@ -1061,6 +1114,42 @@ export default function NamesList() {
                 step="0.1"
                 className="w-14 px-2 py-1"
               />
+            </div>
+            <div className="flex items-center gap-1">
+              <label className="text-xs whitespace-nowrap">Contorno:</label>
+              <ColorPicker
+                value={selectedStrokeColor}
+                onChange={setSelectedStrokeColor}
+                className="w-auto"
+              />
+              <Input
+                type="text"
+                value={
+                  selectedStrokeWidth === 0
+                    ? ""
+                    : selectedStrokeWidth.toString()
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Permitir campo vacío
+                  if (value === "") {
+                    setSelectedStrokeWidth(0);
+                    return;
+                  }
+                  // Permitir solo números y punto decimal
+                  if (/^\d*\.?\d*$/.test(value)) {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      setSelectedStrokeWidth(
+                        Math.max(0, Math.min(20, numValue))
+                      );
+                    }
+                  }
+                }}
+                className="w-14 px-2 py-1"
+                placeholder="0"
+              />
+              <span className="text-xs">px</span>
             </div>
           </div>
 
@@ -1123,7 +1212,9 @@ export default function NamesList() {
           <div className="h-6 w-px bg-border" />
 
           <div className="flex items-center gap-2">
-            <label htmlFor="fontSize" className="text-sm">Tamaño:</label>
+            <label htmlFor="fontSize" className="text-sm">
+              Tamaño:
+            </label>
             <Input
               id="fontSize"
               type="number"
@@ -1164,6 +1255,16 @@ export default function NamesList() {
                 />
                 <span className="text-xs">px</span>
               </div>
+              <Button
+                onClick={() =>
+                  changeAllStrokes(selectedStrokeColor, selectedStrokeWidth)
+                }
+                variant="outline"
+                size="sm"
+                title="Aplicar contorno a todos"
+              >
+                Aplicar contorno
+              </Button>
             </>
           )}
         </div>
@@ -1255,6 +1356,14 @@ export default function NamesList() {
                             textAlign: editingAlign,
                             lineHeight: editingLineHeight,
                             whiteSpace: "pre-wrap",
+                            WebkitTextStroke:
+                              editingStrokeWidth > 0
+                                ? `${editingStrokeWidth}px ${editingStrokeColor}`
+                                : undefined,
+                            paintOrder:
+                              editingStrokeWidth > 0
+                                ? "stroke fill"
+                                : undefined,
                           }}
                         >
                           {editValue.split("").map((char, index) => {
@@ -1381,7 +1490,9 @@ export default function NamesList() {
                             // Actualizar el color del nombre completo
                             setNames(
                               names.map((item) =>
-                                item.id === editingId ? { ...item, color } : item
+                                item.id === editingId
+                                  ? { ...item, color }
+                                  : item
                               )
                             );
                           }}
@@ -1440,6 +1551,44 @@ export default function NamesList() {
                             className="w-14 px-2 py-1"
                             onClick={(e) => e.stopPropagation()}
                           />
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <label className="text-xs">Contorno:</label>
+                          <ColorPicker
+                            value={editingStrokeColor}
+                            onChange={setEditingStrokeColor}
+                            className="w-auto"
+                          />
+                          <Input
+                            type="text"
+                            value={
+                              editingStrokeWidth === 0
+                                ? ""
+                                : editingStrokeWidth.toString()
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Permitir campo vacío
+                              if (value === "") {
+                                setEditingStrokeWidth(0);
+                                return;
+                              }
+                              // Permitir solo números y punto decimal
+                              if (/^\d*\.?\d*$/.test(value)) {
+                                const numValue = parseFloat(value);
+                                if (!isNaN(numValue)) {
+                                  setEditingStrokeWidth(
+                                    Math.max(0, Math.min(20, numValue))
+                                  );
+                                }
+                              }
+                            }}
+                            className="w-14 px-2 py-1"
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="0"
+                          />
+                          <span className="text-xs">px</span>
                         </div>
                       </div>
 
@@ -1665,6 +1814,16 @@ export default function NamesList() {
                           display: "block",
                           width: "100%",
                           lineHeight: item.lineHeight || 1.5,
+                          WebkitTextStroke:
+                            item.strokeWidth && item.strokeWidth > 0
+                              ? `${item.strokeWidth}px ${
+                                  item.strokeColor || "#000000"
+                                }`
+                              : undefined,
+                          paintOrder:
+                            item.strokeWidth && item.strokeWidth > 0
+                              ? "stroke fill"
+                              : undefined,
                         }}
                       >
                         {item.charStyles && item.charStyles.length > 0
