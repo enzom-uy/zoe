@@ -112,3 +112,11 @@ body[data-body-scroll-lock] {
   font-style: normal;
   font-display: swap;
 }
+
+@font-face {
+  font-family: "F25Executive";
+  src: url("/fonts/F25_Executive.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

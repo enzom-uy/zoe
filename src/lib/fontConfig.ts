@@ -38,6 +38,12 @@ export const FONT_CONFIGS: FontConfig[] = [
       // Esta fuente probablemente solo tiene íconos, sin stylistic sets
     ],
   },
+  {
+    value: "F25Executive",
+    label: "F25 Executive",
+    family: "F25Executive, sans-serif",
+    styles: [{ feature: "normal", label: "Normal", emoji: "📝" }],
+  },
 ];
 
 export const AVAILABLE_FONTS = FONT_CONFIGS.map((config) => ({
