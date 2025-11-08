@@ -31,6 +31,7 @@ import {
   Wand2,
   Undo2,
   Redo2,
+  Copy,
 } from "lucide-react";
 
 interface CharStyle {
@@ -95,6 +96,8 @@ export default function NamesList() {
   const [editingStrokeColor, setEditingStrokeColor] =
     useState<string>("#000000");
   const [editingStrokeWidth, setEditingStrokeWidth] = useState<number>(0);
+  const [duplicateCount, setDuplicateCount] = useState<number>(1);
+  const [duplicateCountInput, setDuplicateCountInput] = useState<string>("1");
   const [openCommand, setOpenCommand] = useState(false);
   const [commandMode, setCommandMode] = useState<"main" | "edit" | "delete">(
     "main"
@@ -500,6 +503,38 @@ export default function NamesList() {
     );
   };
 
+  // Duplicar nombre
+  const duplicateName = (id: string, count: number = 1) => {
+    const itemToDuplicate = names.find((item) => item.id === id);
+    if (!itemToDuplicate) return;
+
+    const originalIndex = names.findIndex((item) => item.id === id);
+    const duplicatedItems: NameItem[] = [];
+
+    // Crear las copias solicitadas
+    for (let i = 0; i < count; i++) {
+      duplicatedItems.push({
+        ...itemToDuplicate,
+        id: `${Date.now()}-${i}`,
+      });
+    }
+
+    const newNames = [
+      ...names.slice(0, originalIndex + 1),
+      ...duplicatedItems,
+      ...names.slice(originalIndex + 1),
+    ];
+
+    setNames(newNames);
+    saveToHistory(newNames);
+
+    const message =
+      count === 1
+        ? `"${itemToDuplicate.name}" duplicado correctamente`
+        : `"${itemToDuplicate.name}" duplicado ${count} veces`;
+    toast.success(message);
+  };
+
   const handleEditKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       saveEdit();
@@ -510,6 +545,12 @@ export default function NamesList() {
 
   const toggleActive = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Si se presiona ALT, duplicar el nombre
+    if (e.altKey) {
+      duplicateName(id);
+      return;
+    }
 
     // Si se presiona Shift, activar selección por rango
     if (e.shiftKey && lastSelectedId) {
@@ -672,6 +713,8 @@ export default function NamesList() {
       setEditingColors(new Map());
       setSelectedCharIndexes(new Set());
       setShowStyleEditor(false);
+      setDuplicateCount(1); // Resetear contador de duplicados
+      setDuplicateCountInput("1"); // Resetear input de duplicados
       toast.success(`"${trimmedValue}" actualizado correctamente`);
     }
   };
@@ -682,6 +725,8 @@ export default function NamesList() {
     setEditingStyles(new Map());
     setSelectedCharIndexes(new Set());
     setShowStyleEditor(false);
+    setDuplicateCount(1); // Resetear contador de duplicados
+    setDuplicateCountInput("1"); // Resetear input de duplicados
   };
 
   const dismissHint = () => {
@@ -1307,8 +1352,9 @@ export default function NamesList() {
             {names.length > 1 && selectedIds.size === 0 && showHint && (
               <div className="hint-message">
                 <span>
-                  💡 Usa <kbd>Ctrl+Click</kbd> para seleccionar varios nombres,{" "}
-                  <kbd>Shift+Click</kbd> para seleccionar por rango
+                  💡 Usa <kbd>Ctrl+Click</kbd> para seleccionar varios,{" "}
+                  <kbd>Shift+Click</kbd> para rango, <kbd>Alt+Click</kbd> para
+                  duplicar
                 </span>
                 <Button
                   onClick={dismissHint}
@@ -1605,6 +1651,67 @@ export default function NamesList() {
                           <Wand2 className="h-4 w-4 mr-1" />
                           Estilos
                         </Button>
+
+                        {/* Control de duplicar con cantidad */}
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (editingId) {
+                                duplicateName(editingId, duplicateCount);
+                                cancelEdit();
+                              }
+                            }}
+                            title={`Duplicar ${duplicateCount} vez/veces`}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            type="text"
+                            value={duplicateCountInput}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Permitir escribir libremente
+                              setDuplicateCountInput(value);
+
+                              // Validar y actualizar el valor numérico
+                              if (value === "") {
+                                setDuplicateCount(1);
+                              } else if (/^\d+$/.test(value)) {
+                                const numValue = parseInt(value, 10);
+                                if (
+                                  !isNaN(numValue) &&
+                                  numValue >= 1 &&
+                                  numValue <= 100
+                                ) {
+                                  setDuplicateCount(numValue);
+                                } else if (numValue > 100) {
+                                  setDuplicateCount(100);
+                                }
+                              }
+                            }}
+                            onBlur={() => {
+                              // Al salir del input, corregir valores inválidos
+                              if (
+                                duplicateCountInput === "" ||
+                                parseInt(duplicateCountInput) < 1
+                              ) {
+                                setDuplicateCountInput("1");
+                                setDuplicateCount(1);
+                              } else if (parseInt(duplicateCountInput) > 100) {
+                                setDuplicateCountInput("100");
+                                setDuplicateCount(100);
+                              }
+                            }}
+                            className="w-12 h-8 px-1 text-center text-xs"
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="1"
+                            title="Número de copias (1-100)"
+                          />
+                        </div>
+
                         <Button
                           size="sm"
                           variant="default"
